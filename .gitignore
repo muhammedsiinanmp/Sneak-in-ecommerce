@@ -1,0 +1,58 @@
+# ─── Python / Django ───────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+*.egg-info/
+*.egg
+dist/
+build/
+*.manifest
+*.spec
+pip-log.txt
+pip-delete-this-directory.txt
+# Virtual environments
+venv/
+.venv/
+ENV/
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+staticfiles/
+media/
+# ─── Node / React ─────────────────────────────
+node_modules/
+dist/
+dist-ssr/
+*.local
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+# ─── Environment Variables ─────────────────────
+.env
+.env.local
+.env.*.local
+# ─── OS Files ──────────────────────────────────
+.DS_Store
+Thumbs.db
+eVar1
+# ─── IDE / Editor ─────────────────────────────
+.vscode/
+!.vscode/extensions.json
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+# ─── Docker ────────────────────────────────────
+*.log
+docker-compose.override.yml
+# ─── Misc ──────────────────────────────────────
+*.bak
+*.tmp
+*.swp
