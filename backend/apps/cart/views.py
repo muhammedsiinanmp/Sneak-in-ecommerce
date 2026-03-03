@@ -56,14 +56,20 @@ class UpdateCartItemView(generics.UpdateAPIView):
 
     def patch(self, request, *args, **kwargs):
         item = self.get_object()
-        quantity = request.data.get('quantity', 1)
-        if quantity <= 0:
-            item.delete()
-        else:
-            item.quantity = quantity
-            item.save()
+
+        serializer = self.get_serializer(item, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+
+        quantity = serializer.validated_data.get("quantity")
+
+        if quantity is not None:
+            if quantity <= 0:
+                item.delete()
+            else:
+                serializer.save()
+
         cart = Cart.objects.get(user=request.user)
-        return Response(CartSerializer(cart).data)
+        return Response(CartSerializer(cart).data, status=status.HTTP_200_OK)
 
 
 class RemoveCartItemView(generics.DestroyAPIView):
