@@ -1,4 +1,4 @@
-import React, { useContext, useEffect, useState } from 'react'
+import React, { useContext, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title'
 import CartTotal from '../components/CartTotal'
@@ -6,23 +6,6 @@ import { toast } from "react-toastify";
 
 const Cart = () => {
   const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext)
-  const [cartData, setCartData] = useState([])
-
-  useEffect(() => {
-    const tempData = []
-    for (const productId in cartItems) {
-      for (const size in cartItems[productId]) {
-        if (cartItems[productId][size] > 0) {
-          tempData.push({
-            id: productId,
-            size: size,
-            quantity: cartItems[productId][size]
-          })
-        }
-      }
-    }
-    setCartData(tempData)
-  }, [cartItems])
 
   return (
     <div className='border-t pt-14'>
@@ -31,7 +14,7 @@ const Cart = () => {
       </div>
 
       {/* Empty Cart State */}
-      {cartData.length === 0 ? (
+      {cartItems.length === 0 ? (
         <div className='flex flex-col items-center justify-center py-20'>
           <img
             src='https://cdn-icons-png.flaticon.com/128/11329/11329060.png'
@@ -51,18 +34,22 @@ const Cart = () => {
         <>
           {/* Cart Items */}
           <div>
-            {cartData.map((item, index) => {
-              const productData = products.find(product => product.id === item.id);
-              if (!productData) return null;
+            {cartItems.map((item) => {
+              const productInfo = item.product_detail;
+              if (!productInfo) return null;
 
               return (
-                <div key={index} className='py-4 border-t border-b grid grid-cols-[4fr_1fr_1fr] items-center gap-4'>
+                <div key={item.id} className='py-4 border-t border-b grid grid-cols-[4fr_1fr_1fr] items-center gap-4'>
                   <div className='flex items-start gap-6'>
-                    <img className='w-16 sm:w-20' src={productData.image[0]} />
+                    <img
+                      className='w-16 sm:w-20'
+                      src={Array.isArray(productInfo.image) ? productInfo.image[0] : productInfo.image}
+                      alt={productInfo.name}
+                    />
                     <div>
-                      <p className='text-sm sm:text-lg font-medium'>{productData.name}</p>
+                      <p className='text-sm sm:text-lg font-medium'>{productInfo.name}</p>
                       <div className='flex items-center gap-5 mt-2'>
-                        <p>{currency} {productData.price}</p>
+                        <p>{currency} {productInfo.price}</p>
                         <p className='border px-3 py-1 bg-slate-50'>{item.size}</p>
                       </div>
                     </div>
@@ -74,13 +61,13 @@ const Cart = () => {
                     className='border px-2 py-1 w-16'
                     onChange={(e) =>
                       e.target.value > 0 &&
-                      updateQuantity(item.id, item.size, Number(e.target.value))
+                      updateQuantity(item.id, Number(e.target.value))
                     }
                   />
                   <img
                     className='w-4 cursor-pointer'
                     src='https://cdn-icons-png.flaticon.com/128/484/484611.png'
-                    onClick={() => updateQuantity(item.id, item.size, 0)}
+                    onClick={() => updateQuantity(item.id, 0)}
                   />
                 </div>
               )

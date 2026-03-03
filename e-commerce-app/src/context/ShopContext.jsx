@@ -1,31 +1,77 @@
 // src/context/ShopContext.jsx
-import React, { createContext, useEffect, useState, useContext } from "react";
+import React, { createContext, useEffect, useState, useContext, useCallback } from "react";
 import { AuthContext } from "./AuthContext";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 
 export const ShopContext = createContext();
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
 export const ShopProvider = ({ children }) => {
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext);
+  const { user, getAccessToken } = useContext(AuthContext);
 
   const [products, setProducts] = useState([]);
-  const [cartItems, setCartItems] = useState({});
+  const [cartItems, setCartItems] = useState([]);
+  const [cartTotal, setCartTotal] = useState(0);
+  const [cartCount, setCartCount] = useState(0);
+  const [wishlistItems, setWishlistItems] = useState([]);
   const [showSearch, setShowSearch] = useState(false);
   const [search, setSearch] = useState("");
 
   const currency = "₹";
 
-  // -------------------------------------
-  // 1) LOAD PRODUCTS
-  // -------------------------------------
+  // ── helper: authenticated fetch ────────────────────────
+  const authFetch = useCallback(
+    async (url, options = {}) => {
+      const token = await getAccessToken();
+      if (!token) return null;
+
+      const res = await fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          ...options.headers,
+        },
+      });
+      return res;
+    },
+    [getAccessToken]
+  );
+
+  // =====================================================
+  // 1) LOAD PRODUCTS (fetch all pages)
+  // =====================================================
   useEffect(() => {
     const loadProducts = async () => {
       try {
-        const res = await fetch("http://localhost:3001/products");
-        const data = await res.json();
-        setProducts(data);
+        let allProducts = [];
+        let url = `${API}/products/?page_size=100`;
+
+        while (url) {
+          const res = await fetch(url);
+          const data = await res.json();
+
+          if (data.results) {
+            allProducts = [...allProducts, ...data.results];
+            url = data.next;
+          } else if (Array.isArray(data)) {
+            allProducts = data;
+            url = null;
+          } else {
+            url = null;
+          }
+        }
+
+        // Normalise: ensure image is always an array for list compatibility
+        const normalised = allProducts.map((p) => ({
+          ...p,
+          image: Array.isArray(p.image) ? p.image : p.image ? [p.image] : [],
+        }));
+
+        setProducts(normalised);
       } catch (err) {
         console.error("Failed to load products:", err);
       }
@@ -33,160 +79,220 @@ export const ShopProvider = ({ children }) => {
     loadProducts();
   }, []);
 
-  // ------------------------------------------------------
-  // 2) LOAD USER CART ON LOGIN
-  // ------------------------------------------------------
-  useEffect(() => {
-    const loadUserCart = async () => {
-      if (!user) {
-        setCartItems({});
-        return;
-      }
-
-      try {
-        const res = await fetch(
-          `http://localhost:3001/carts?userId=${user.id}`
-        );
-        const data = await res.json();
-
-        // Find correct cart ONLY for this user
-        const validCart = data.find((c) => c.userId === user.id);
-
-        if (validCart) setCartItems(validCart.items || {});
-        else setCartItems({});
-      } catch (err) {
-        console.error("Failed to load cart:", err);
-        setCartItems({});
-      }
-    };
-
-    loadUserCart();
-  }, [user]);
-
-  // ------------------------------------------------------
-  // 3) SAVE CART TO SERVER (NEVER FOR LOGGED OUT USERS)
-  // ------------------------------------------------------
-  const saveCartToServer = async (updatedCart) => {
-    if (!user) return; // prevent null user carts
+  // =====================================================
+  // 2) LOAD CART ON LOGIN
+  // =====================================================
+  const loadCart = useCallback(async () => {
+    if (!user) {
+      setCartItems([]);
+      setCartTotal(0);
+      setCartCount(0);
+      return;
+    }
 
     try {
-      const res = await fetch(
-        `http://localhost:3001/carts?userId=${user.id}`
-      );
-      const data = await res.json();
-
-      if (data.length > 0) {
-        // Update existing cart
-        const cartId = data[0].id;
-
-        await fetch(`http://localhost:3001/carts/${cartId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ items: updatedCart }),
-        });
-      } else {
-        // Create new cart
-        await fetch(`http://localhost:3001/carts`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: user.id,
-            items: updatedCart,
-          }),
-        });
+      const res = await authFetch(`${API}/cart/`);
+      if (!res || !res.ok) {
+        setCartItems([]);
+        return;
       }
+      const data = await res.json();
+      setCartItems(data.items || []);
+      setCartTotal(data.total || 0);
+      setCartCount(data.item_count || 0);
     } catch (err) {
-      console.error("Failed to save cart:", err);
+      console.error("Failed to load cart:", err);
+      setCartItems([]);
     }
-  };
+  }, [user, authFetch]);
 
-  // ------------------------------------------------------
-  // 4) ADD TO CART (STOCK CHECK + TOAST)
-  // ------------------------------------------------------
-  const addToCart = (productId, size) => {
-    const product = products.find(
-      (p) => String(p.id) === String(productId)
-    );
+  useEffect(() => {
+    loadCart();
+  }, [loadCart]);
 
+  // =====================================================
+  // 3) CART OPERATIONS
+  // =====================================================
+  const addToCart = async (productId, size) => {
+    if (!user) {
+      toast.error("Please login to add items to cart!");
+      return;
+    }
+
+    const product = products.find((p) => String(p.id) === String(productId));
     if (!product) return toast.error("Product not found");
 
-    // Stock check
-    if (
-      product.inStock === false ||
-      (typeof product.stock === "number" && product.stock <= 0)
-    ) {
+    if (product.in_stock === false) {
       return toast.error("This product is currently out of stock!");
     }
 
-    const updated = { ...cartItems };
+    try {
+      const res = await authFetch(`${API}/cart/add/`, {
+        method: "POST",
+        body: JSON.stringify({
+          product_id: Number(productId),
+          size: Number(size),
+          quantity: 1,
+        }),
+      });
 
-    if (!updated[productId]) updated[productId] = {};
-    if (!updated[productId][size]) updated[productId][size] = 1;
-    else updated[productId][size] += 1;
+      if (!res || !res.ok) {
+        const err = await res?.json().catch(() => ({}));
+        toast.error(err?.error || "Failed to add to cart");
+        return;
+      }
 
-    setCartItems(updated);
-    saveCartToServer(updated);
-
-    toast.success("Added to cart");
+      const data = await res.json();
+      setCartItems(data.items || []);
+      setCartTotal(data.total || 0);
+      setCartCount(data.item_count || 0);
+      toast.success("Added to cart");
+    } catch (err) {
+      console.error("Add to cart error:", err);
+      toast.error("Failed to add to cart");
+    }
   };
 
-  // ------------------------------------------------------
-  // 5) UPDATE QUANTITY / REMOVE ITEM
-  // ------------------------------------------------------
-  const updateQuantity = (productId, size, quantity) => {
-    const updated = { ...cartItems };
-    if (!updated[productId]) return;
-
-    if (quantity <= 0) {
-      delete updated[productId][size];
-      if (Object.keys(updated[productId]).length === 0) {
-        delete updated[productId];
+  const updateQuantity = async (cartItemId, quantity) => {
+    try {
+      if (quantity <= 0) {
+        // Remove via DELETE
+        const res = await authFetch(`${API}/cart/item/${cartItemId}/remove/`, {
+          method: "DELETE",
+        });
+        if (!res || !res.ok) return;
+        const data = await res.json();
+        setCartItems(data.items || []);
+        setCartTotal(data.total || 0);
+        setCartCount(data.item_count || 0);
+      } else {
+        const res = await authFetch(`${API}/cart/item/${cartItemId}/`, {
+          method: "PATCH",
+          body: JSON.stringify({ quantity }),
+        });
+        if (!res || !res.ok) return;
+        const data = await res.json();
+        setCartItems(data.items || []);
+        setCartTotal(data.total || 0);
+        setCartCount(data.item_count || 0);
       }
-    } else {
-      updated[productId][size] = quantity;
+    } catch (err) {
+      console.error("Update cart error:", err);
+    }
+  };
+
+  const clearCart = async () => {
+    try {
+      const res = await authFetch(`${API}/cart/clear/`, {
+        method: "DELETE",
+      });
+      if (res && res.ok) {
+        const data = await res.json();
+        setCartItems(data.items || []);
+        setCartTotal(0);
+        setCartCount(0);
+      }
+    } catch (err) {
+      console.error("Clear cart error:", err);
+    }
+  };
+
+  // =====================================================
+  // 4) WISHLIST OPERATIONS
+  // =====================================================
+  const loadWishlist = useCallback(async () => {
+    if (!user) {
+      setWishlistItems([]);
+      return;
+    }
+    try {
+      const res = await authFetch(`${API}/wishlist/`);
+      if (!res || !res.ok) {
+        setWishlistItems([]);
+        return;
+      }
+      const data = await res.json();
+      // Handle paginated or plain array response
+      setWishlistItems(data.results || data || []);
+    } catch (err) {
+      console.error("Failed to load wishlist:", err);
+      setWishlistItems([]);
+    }
+  }, [user, authFetch]);
+
+  useEffect(() => {
+    loadWishlist();
+  }, [loadWishlist]);
+
+  const addToWishlist = async (productId) => {
+    if (!user) {
+      toast.error("Please login to add to wishlist!");
+      return;
     }
 
-    setCartItems(updated);
-    saveCartToServer(updated);
-  };
+    try {
+      const res = await authFetch(`${API}/wishlist/`, {
+        method: "POST",
+        body: JSON.stringify({ product: Number(productId) }),
+      });
 
-  // ------------------------------------------------------
-  // 6) GET TOTAL ITEMS COUNT
-  // ------------------------------------------------------
-  const getCartCount = () => {
-    let count = 0;
-    for (const productId in cartItems) {
-      for (const size in cartItems[productId]) {
-        count += cartItems[productId][size];
+      if (!res) return;
+
+      if (res.status === 400) {
+        toast.info("Already in wishlist");
+        return;
       }
-    }
-    return count;
-  };
 
-  // ------------------------------------------------------
-  // 7) GET TOTAL CART AMOUNT
-  // ------------------------------------------------------
-  const getCartAmount = () => {
-    if (!products.length || !Object.keys(cartItems).length) return 0;
-
-    let total = 0;
-
-    for (const productId in cartItems) {
-      for (const size in cartItems[productId]) {
-        const qty = cartItems[productId][size];
-        const product = products.find(
-          (p) => String(p.id) === String(productId)
-        );
-        if (product) total += product.price * qty;
+      if (!res.ok) {
+        toast.error("Failed to add to wishlist");
+        return;
       }
-    }
 
-    return total;
+      await loadWishlist();
+      toast.success("Added to wishlist");
+    } catch (err) {
+      console.error("Add to wishlist error:", err);
+      toast.error("Failed to add to wishlist");
+    }
   };
 
-  // ------------------------------------------------------
+  const removeFromWishlist = async (wishlistItemId) => {
+    try {
+      const res = await authFetch(`${API}/wishlist/${wishlistItemId}/`, {
+        method: "DELETE",
+      });
+
+      if (res && (res.ok || res.status === 204)) {
+        await loadWishlist();
+        toast.success("Removed from wishlist");
+      }
+    } catch (err) {
+      console.error("Remove from wishlist error:", err);
+    }
+  };
+
+  const isInWishlist = (productId) => {
+    return wishlistItems.some(
+      (item) => String(item.product) === String(productId)
+    );
+  };
+
+  const getWishlistItemId = (productId) => {
+    const item = wishlistItems.find(
+      (item) => String(item.product) === String(productId)
+    );
+    return item?.id;
+  };
+
+  // =====================================================
+  // 5) COMPUTED VALUES
+  // =====================================================
+  const getCartCount = () => cartCount;
+  const getCartAmount = () => cartTotal;
+
+  // =====================================================
   // PROVIDER VALUE
-  // ------------------------------------------------------
+  // =====================================================
   return (
     <ShopContext.Provider
       value={{
@@ -198,11 +304,22 @@ export const ShopProvider = ({ children }) => {
         setShowSearch,
         addToCart,
         updateQuantity,
+        clearCart,
         getCartCount,
         getCartAmount,
         navigate,
         search,
         setSearch,
+        loadCart,
+        // wishlist
+        wishlistItems,
+        addToWishlist,
+        removeFromWishlist,
+        isInWishlist,
+        getWishlistItemId,
+        loadWishlist,
+        // auth fetch helper
+        authFetch,
       }}
     >
       {children}

@@ -1,64 +1,148 @@
-import React, { createContext, useEffect, useState } from "react";
+import React, { createContext, useEffect, useState, useCallback } from "react";
 import { toast } from "react-toastify";
 
 export const AuthContext = createContext();
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
+// ── helpers ──────────────────────────────────────────────
+const getStoredTokens = () => {
+  try {
+    return {
+      access: localStorage.getItem("access_token"),
+      refresh: localStorage.getItem("refresh_token"),
+    };
+  } catch {
+    return { access: null, refresh: null };
+  }
+};
+
+const storeTokens = (access, refresh) => {
+  localStorage.setItem("access_token", access);
+  localStorage.setItem("refresh_token", refresh);
+};
+
+const clearTokens = () => {
+  localStorage.removeItem("access_token");
+  localStorage.removeItem("refresh_token");
+};
+
+// Decode JWT payload (no library needed)
+const decodeToken = (token) => {
+  try {
+    const payload = token.split(".")[1];
+    return JSON.parse(atob(payload));
+  } catch {
+    return null;
+  }
+};
+
+const isTokenExpired = (token) => {
+  const decoded = decodeToken(token);
+  if (!decoded?.exp) return true;
+  return decoded.exp * 1000 < Date.now() - 30000; // 30s buffer
+};
+
+// ── provider ─────────────────────────────────────────────
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
-  const [authLoading, setAuthLoading] = useState(true); // NEW: prevents logout on refresh
+  const [authLoading, setAuthLoading] = useState(true);
 
-  // Load user from localStorage on refresh
-  useEffect(() => {
+  // ---- refresh access token ----
+  const refreshAccessToken = useCallback(async () => {
+    const { refresh } = getStoredTokens();
+    if (!refresh) return null;
+
     try {
-      const savedUser = JSON.parse(localStorage.getItem("currentUser"));
-      if (savedUser) {
-        setUser(savedUser);
+      const res = await fetch(`${API}/auth/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh }),
+      });
+
+      if (!res.ok) {
+        clearTokens();
+        setUser(null);
+        return null;
       }
-    } catch (err) {
-      console.error("Failed to parse saved user", err);
+
+      const data = await res.json();
+      storeTokens(data.access, data.refresh || refresh);
+      return data.access;
+    } catch {
+      clearTokens();
+      setUser(null);
+      return null;
     }
-    setAuthLoading(false); // FINISHED LOADING
   }, []);
 
-  // Save user whenever it changes
+  // ---- get a valid access token (auto-refresh) ----
+  const getAccessToken = useCallback(async () => {
+    let { access } = getStoredTokens();
+    if (access && !isTokenExpired(access)) return access;
+
+    // try refresh
+    access = await refreshAccessToken();
+    return access;
+  }, [refreshAccessToken]);
+
+  // ---- fetch user profile ----
+  const fetchProfile = useCallback(
+    async (token) => {
+      try {
+        const res = await fetch(`${API}/auth/profile/`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        if (!res.ok) throw new Error("Profile fetch failed");
+
+        const data = await res.json();
+        setUser(data);
+        return data;
+      } catch {
+        clearTokens();
+        setUser(null);
+        return null;
+      }
+    },
+    []
+  );
+
+  // ---- initialise on mount ----
   useEffect(() => {
-    if (user) {
-      localStorage.setItem("currentUser", JSON.stringify(user));
-    } else {
-      localStorage.removeItem("currentUser");
-    }
-  }, [user]);
+    const init = async () => {
+      const token = await getAccessToken();
+      if (token) {
+        await fetchProfile(token);
+      }
+      setAuthLoading(false);
+    };
+    init();
+  }, [getAccessToken, fetchProfile]);
 
-  // ---------------- SIGNUP ----------------
-  const signup = async (name, email, password) => {
+  // ---- signup ----
+  const signup = async (name, email, password, password2) => {
     try {
-      const existing = await fetch(
-        `http://localhost:3001/users?email=${email}`
-      ).then(res => res.json());
+      const res = await fetch(`${API}/auth/register/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, email, password, password2 }),
+      });
 
-      if (existing.length > 0) {
-        toast.error("Email already exists!");
+      const data = await res.json();
+
+      if (!res.ok) {
+        const msg =
+          data.email?.[0] ||
+          data.password?.[0] ||
+          data.non_field_errors?.[0] ||
+          "Signup failed!";
+        toast.error(msg);
         return { success: false };
       }
 
-      const newUser = {
-        id: Math.random().toString(36).substr(2, 9),
-        name,
-        email,
-        password,
-        role: "user",
-        isAdmin: false,
-        createdAt: new Date().toISOString(),
-      };
-
-      const response = await fetch("http://localhost:3001/users", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newUser),
-      });
-
-      const savedUser = await response.json();
-      setUser(savedUser);
+      storeTokens(data.tokens.access, data.tokens.refresh);
+      setUser(data.user);
 
       toast.success("Account Created Successfully!");
       return { success: true };
@@ -69,36 +153,37 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ---------------- LOGIN ----------------
+  // ---- login ----
   const login = async (email, password) => {
     try {
-      // Check Admin Login
-      const admin = await fetch(
-        `http://localhost:3001/admin?email=${email}&password=${password}`
-      ).then(res => res.json());
+      const res = await fetch(`${API}/auth/login/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, password }),
+      });
 
-      if (admin.length > 0) {
-        const adminUser = { ...admin[0], role: "admin", isAdmin: true };
-        setUser(adminUser);
-        toast.success("Admin Logged In!");
-        return { success: true, admin: true };
-      }
-
-      // Check Normal Users
-      const users = await fetch(
-        `http://localhost:3001/users?email=${email}&password=${password}`
-      ).then(res => res.json());
-
-      if (users.length === 0) {
+      if (!res.ok) {
         toast.error("Invalid Email or Password!");
         return { success: false };
       }
 
-      const loggedUser = { ...users[0], role: "user", isAdmin: false };
-      setUser(loggedUser);
+      const data = await res.json(); // { access, refresh }
+      storeTokens(data.access, data.refresh);
 
-      toast.success("User Logged In Successfully!");
-      return { success: true, admin: false };
+      // Fetch profile to get user details + role
+      const profile = await fetchProfile(data.access);
+
+      if (!profile) {
+        toast.error("Login failed!");
+        return { success: false };
+      }
+
+      const isAdminUser = profile.role === "admin";
+
+      toast.success(
+        isAdminUser ? "Admin Logged In!" : "User Logged In Successfully!"
+      );
+      return { success: true, admin: isAdminUser };
     } catch (err) {
       console.error("Login error:", err);
       toast.error("Login failed!");
@@ -106,13 +191,32 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // ---------------- LOGOUT ----------------
-  const logout = () => {
+  // ---- logout ----
+  const logout = async () => {
+    const { refresh } = getStoredTokens();
+    const token = await getAccessToken();
+
+    if (token && refresh) {
+      try {
+        await fetch(`${API}/auth/logout/`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({ refresh }),
+        });
+      } catch {
+        // silent – still clear locally
+      }
+    }
+
+    clearTokens();
     setUser(null);
     toast.success("Logged Out Successfully!");
   };
 
-  const isAdmin = user?.role === "admin" || user?.isAdmin === true;
+  const isAdmin = user?.role === "admin";
 
   return (
     <AuthContext.Provider
@@ -123,6 +227,7 @@ export const AuthProvider = ({ children }) => {
         login,
         logout,
         isAdmin,
+        getAccessToken,
       }}
     >
       {children}

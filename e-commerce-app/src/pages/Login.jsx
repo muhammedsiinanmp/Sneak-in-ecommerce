@@ -11,6 +11,7 @@ const Login = () => {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [password2, setPassword2] = useState("");
 
   const onSubmitHandler = async (e) => {
     e.preventDefault();
@@ -27,7 +28,12 @@ const Login = () => {
       }
 
     } else {
-      const result = await signup(name, email, password);
+      if (password !== password2) {
+        alert("Passwords do not match!");
+        return;
+      }
+
+      const result = await signup(name, email, password, password2);
 
       if (result.success) {
         navigate("/"); // signup is always normal user
@@ -74,6 +80,17 @@ const Login = () => {
         value={password}
         onChange={(e) => setPassword(e.target.value)}
       />
+
+      {currentState !== "Login" && (
+        <input
+          type="password"
+          className='w-full px-3 py-2 border border-gray-800'
+          placeholder='Confirm Password'
+          required
+          value={password2}
+          onChange={(e) => setPassword2(e.target.value)}
+        />
+      )}
 
       <div className='w-full flex justify-between text-sm mt-[-8px]'>
         <p className='cursor-pointer'>Forgot your password ?</p>
