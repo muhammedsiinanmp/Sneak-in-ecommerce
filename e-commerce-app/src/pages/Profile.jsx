@@ -34,10 +34,20 @@ const Profile = () => {
           </div>
 
           <div>
+            <p className="text-sm font-semibold text-gray-500">Phone</p>
+            <p className="text-lg">{user.phone || "Not provided"}</p>
+          </div>
+
+          <div>
+            <p className="text-sm font-semibold text-gray-500">Address</p>
+            <p className="text-lg">{user.address || "Not provided"}</p>
+          </div>
+
+          <div>
             <p className="text-sm font-semibold text-gray-500">Account Created</p>
             <p className="text-lg">
-              {user.createdAt 
-                ? new Date(user.createdAt).toDateString()
+              {user.created_at
+                ? new Date(user.created_at).toDateString()
                 : "Not available"}
             </p>
           </div>

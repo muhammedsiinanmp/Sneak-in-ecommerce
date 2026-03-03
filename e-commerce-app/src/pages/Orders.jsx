@@ -4,23 +4,28 @@ import { AuthContext } from '../context/AuthContext'
 import Title from '../components/Title'
 import { toast } from 'react-toastify'
 
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
+
 const Orders = () => {
-  const { currency } = useContext(ShopContext);
+  const { currency, authFetch } = useContext(ShopContext);
   const { user } = useContext(AuthContext);
   const [orders, setOrders] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   const fetchOrders = async () => {
     if (!user) return;
 
     try {
-      const res = await fetch(`http://localhost:3001/orders`);
-      const data = await res.json();
-      
-      const filtered = data.filter(order => order.userId === user.id);
+      const res = await authFetch(`${API}/orders/`);
+      if (!res) return;
 
-      setOrders(filtered);
+      const data = await res.json();
+      // Handle paginated or plain array
+      setOrders(data.results || data || []);
     } catch (err) {
       console.error("Failed to fetch orders:", err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -36,42 +41,26 @@ const Orders = () => {
   }, [user]);
 
   // cancel only one item inside an order
-  const cancelItem = async (order, itemIndex) => {
-    const updatedItems = JSON.parse(JSON.stringify(order.items)); // deep copy
-    if (!updatedItems[itemIndex]) return;
-
-    // mark the item cancelled
-    updatedItems[itemIndex] = {
-      ...updatedItems[itemIndex],
-      cancelled: true
-    };
-
-    // if all items cancelled, set order status to cancelled
-    const allCancelled = updatedItems.every(i => i.cancelled);
-
+  const cancelOrder = async (orderId) => {
     try {
-      const res = await fetch(`http://localhost:3001/orders/${order.id}`, {
+      const res = await authFetch(`${API}/orders/${orderId}/cancel/`, {
         method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          items: updatedItems,
-          status: allCancelled ? "cancelled" : order.status || "processing"
-        })
       });
 
-      if (!res.ok) throw new Error("Failed to cancel item");
+      if (!res || !res.ok) throw new Error("Failed to cancel order");
 
-      toast.success("Item cancelled");
-      // refresh local list
+      toast.success("Order cancelled");
       fetchOrders();
 
       // notify other parts (dashboard/admin)
       window.dispatchEvent(new Event("ordersUpdated"));
     } catch (error) {
-      console.error("Error cancelling item:", error);
-      toast.error("Failed to cancel item");
+      console.error("Error cancelling order:", error);
+      toast.error("Failed to cancel order");
     }
   };
+
+  if (loading) return <div className="text-center py-20">Loading orders...</div>
 
   return (
     <div className='border-t pt-16'>
@@ -88,9 +77,22 @@ const Orders = () => {
       <div>
         {orders.map((order, orderIndex) => (
           <div key={order.id || orderIndex} className="mb-10 pb-6 border-b">
-            <p className="text-gray-500 mb-4">
-              Order Date: {new Date(order.date).toDateString()}
-            </p>
+            <div className="flex justify-between items-center bg-gray-50 p-3 rounded mb-4">
+              <p className="text-gray-600 font-medium">
+                Order ID: #{order.id} | Date: {new Date(order.created_at).toDateString()}
+              </p>
+              <div className="flex items-center gap-4">
+                <p className="capitalize">Status: <span className={`font-semibold ${order.status === 'cancelled' ? 'text-red-500' : 'text-green-600'}`}>{order.status}</span></p>
+                {order.status !== 'cancelled' && order.status !== 'delivered' && (
+                  <button
+                    onClick={() => cancelOrder(order.id)}
+                    className="text-sm border border-red-500 text-red-500 px-3 py-1 rounded hover:bg-red-50"
+                  >
+                    Cancel Order
+                  </button>
+                )}
+              </div>
+            </div>
 
             {order.items.map((item, i) => (
               <div
@@ -99,37 +101,35 @@ const Orders = () => {
               >
                 {/* Product Info */}
                 <div className="flex items-start gap-6 w-full md:w-[70%]">
-                  <img className="w-20 sm:w-24" src={item.image} alt="" />
+                  <img
+                    className="w-16 sm:w-20 object-contain h-20 border"
+                    src={item.product_image}
+                    alt={item.product_name}
+                  />
                   <div className="space-y-1">
-                    <p className="text-lg font-semibold">{item.name}</p>
+                    <p className="text-lg font-semibold">{item.product_name}</p>
                     <p className="text-gray-700">{currency}{item.price}</p>
-                    <p>Quantity: {item.quantity}</p>
-                    <p>Size: {item.size}</p>
+                    <p className="text-sm">Quantity: {item.quantity}</p>
+                    <p className="text-sm">Size: {item.size}</p>
 
                     {/* small badge if cancelled */}
                     {item.cancelled && (
                       <span className="text-red-600 font-medium text-sm">
-                        Cancelled
+                        Item Cancelled
                       </span>
                     )}
                   </div>
                 </div>
 
-                {/* Cancel Button (for each item) */}
-                <div className="flex flex-col items-end gap-3">
-                  {!item.cancelled ? (
-                    <button
-                      onClick={() => cancelItem(order, i)}
-                      className="border border-red-500 text-red-600 px-4 py-2 rounded hover:bg-red-600 hover:text-white transition"
-                    >
-                      Cancel Item
-                    </button>
-                  ) : (
-                    <span className="text-red-600 font-semibold">Cancelled</span>
-                  )}
+                <div className="text-right">
+                  <p className="text-lg font-medium">{currency}{(item.price * item.quantity).toFixed(2)}</p>
                 </div>
               </div>
             ))}
+
+            <div className="flex justify-end mt-4 pt-4 border-t">
+              <p className="text-xl font-bold">Total: {currency}{order.total_amount}</p>
+            </div>
 
           </div>
         ))}

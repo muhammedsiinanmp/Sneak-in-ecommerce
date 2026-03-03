@@ -9,89 +9,94 @@ const PlaceOrder = () => {
 
   const [method, setMethod] = useState("cod");
 
-  const { cartItems, products, navigate, setCartItems } = useContext(ShopContext);
+  const { cartItems, navigate, setCartItems, authFetch } = useContext(ShopContext);
   const { user } = useContext(AuthContext);
 
-  const placeOrder = async () => {
+  const [formData, setFormData] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    street: '',
+    city: '',
+    state: '',
+    zipcode: '',
+    country: '',
+    phone: ''
+  });
+
+  const onChangeHandler = (e) => {
+    const { name, value } = e.target;
+    setFormData(data => ({ ...data, [name]: value }));
+  };
+
+  const placeOrder = async (e) => {
+    if (e) e.preventDefault();
 
     if (!user) {
       toast.error("Please login to place order!");
       return;
     }
 
-    // Build order items
-    const orderItems = [];
-
-    for (const productId in cartItems) {
-      for (const size in cartItems[productId]) {
-        const quantity = cartItems[productId][size];
-        const product = products.find(p => p.id === productId);
-
-        if (product) {
-          orderItems.push({
-            productId,
-            size,
-            quantity,
-            price: product.price,
-            name: product.name,
-            image: product.image[0]
-          });
-        }
-      }
-    }
-
-    if (orderItems.length === 0) {
+    if (cartItems.length === 0) {
       toast.error("Your cart is empty");
       return;
     }
 
-    const newOrder = {
-      userId: user.id,
-      items: orderItems,
-      paymentMethod: method,
-      date: new Date().toISOString()
-    };
+    // Build shipping address string
+    const address = `${formData.firstName} ${formData.lastName}, ${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipcode}, ${formData.country}. Phone: ${formData.phone}`;
 
-    // Save order to JSON server
-    await fetch("http://localhost:3001/orders", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(newOrder)
-    });
+    try {
+      const res = await authFetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000/api"}/orders/place/`, {
+        method: "POST",
+        body: JSON.stringify({
+          payment_method: method,
+          shipping_address: address
+        })
+      });
 
-    // Clear cart in backend + UI
-    setCartItems({});
-    toast.success("Order placed successfully!");
+      if (!res) return;
 
-    navigate("/orders");
+      if (!res.ok) {
+        const errorData = await res.json();
+        toast.error(errorData.error || "Failed to place order");
+        return;
+      }
+
+      toast.success("Order placed successfully!");
+      setCartItems([]);
+      navigate("/orders");
+    } catch (err) {
+      console.error("Order error:", err);
+      toast.error("Failed to place order");
+    }
   };
 
   return (
     <div className='flex flex-col sm:flex-row justify-between gap-4 pt-5 sm:pt-14 min-h-[80vh] border-t'>
-      
+
       {/* LEFT */}
-      <div className='flex flex-col gap-4 w-full sm:max-w-[480px]'>
+      <form onSubmit={placeOrder} className='flex flex-col gap-4 w-full sm:max-w-[480px]'>
         <div className='text-xl sm:text-2xl my-3'>
           <Title text1="DELIVERY " text2="INFORMATION" />
         </div>
 
         {/* Inputs */}
         <div className='flex gap-3 '>
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='First name' />
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Last name' />
+          <input required name='firstName' onChange={onChangeHandler} value={formData.firstName} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='First name' />
+          <input required name='lastName' onChange={onChangeHandler} value={formData.lastName} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Last name' />
         </div>
-        <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Email address' />
-        <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Street' />
+        <input required name='email' onChange={onChangeHandler} value={formData.email} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Email address' />
+        <input required name='street' onChange={onChangeHandler} value={formData.street} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Street' />
         <div className='flex gap-3 '>
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='City' />
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='State' />
+          <input required name='city' onChange={onChangeHandler} value={formData.city} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='City' />
+          <input required name='state' onChange={onChangeHandler} value={formData.state} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='State' />
         </div>
         <div className='flex gap-3 '>
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Zip code' />
-          <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Country' />
+          <input required name='zipcode' onChange={onChangeHandler} value={formData.zipcode} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Zip code' />
+          <input required name='country' onChange={onChangeHandler} value={formData.country} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Country' />
         </div>
-        <input className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Phone' />
-      </div>
+        <input required name='phone' onChange={onChangeHandler} value={formData.phone} className='border border-gray-300 rounded py-1.5 px-3.5 w-full' placeholder='Phone' />
+      </form>
 
       {/* RIGHT */}
       <div className='mt-8'>

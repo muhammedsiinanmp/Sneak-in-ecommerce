@@ -7,7 +7,7 @@ const Navbar = () => {
 
     const [visible, setVisible] = useState(false)
 
-    const { setShowSearch, getCartCount } = useContext(ShopContext)
+    const { setShowSearch, getCartCount, wishlistItems } = useContext(ShopContext)
     const { user, logout, isAdmin } = useContext(AuthContext)
 
     return (
@@ -107,6 +107,13 @@ const Navbar = () => {
                                     )}
 
                                     <Link
+                                        to="/wishlist"
+                                        className='cursor-pointer hover:text-black'
+                                    >
+                                        Wishlist
+                                    </Link>
+
+                                    <Link
                                         to="/orders"
                                         className='cursor-pointer hover:text-black'
                                     >
@@ -126,6 +133,18 @@ const Navbar = () => {
                         </div>
                     </div>
                 </div>
+
+                {/* Wishlist */}
+                <Link to="/wishlist" className="relative hidden sm:block">
+                    <img
+                        src="https://cdn-icons-png.flaticon.com/128/1077/1077035.png"
+                        className='w-5 cursor-pointer'
+                        alt="Wishlist"
+                    />
+                    <p className="absolute top-[-5px] right-[-8px] min-w-4 text-center leading-4 bg-red-500 text-white rounded-full text-[8px] px-1">
+                        {wishlistItems.length}
+                    </p>
+                </Link>
 
                 {/* Cart */}
                 <Link to="/cart" className="relative">

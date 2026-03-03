@@ -11,6 +11,7 @@ import Login from "./pages/Login";
 import PlaceOrder from "./pages/PlaceOrder";
 import Orders from "./pages/Orders";
 import Profile from "./pages/Profile";
+import Wishlist from "./pages/Wishlist";
 
 import Navbar from "./components/Navbar";
 import Footer from "./components/Footer";
@@ -49,6 +50,7 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/place-order" element={<PlaceOrder />} />
         <Route path="/orders" element={<Orders />} />
+        <Route path="/wishlist" element={<Wishlist />} />
         <Route path="/profile" element={<Profile />} />
 
 
@@ -56,9 +58,9 @@ const App = () => {
           path="/admin/*"
           element={
             <AdminProtected>
-        
-                <AdminRoutes />
-         
+
+              <AdminRoutes />
+
             </AdminProtected>
           }
         />
