@@ -1,288 +1,157 @@
-import React, { useState, useEffect } from 'react';
-import { Search, Mail, ShoppingBag, User, Trash2, X, Package, Clock, IndianRupee, Calendar } from 'lucide-react';
+import React, { useState, useEffect, useContext } from 'react';
+import { ShopContext } from "../../context/ShopContext";
 
-const API = "http://localhost:3001";
+const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
 const UsersManagement = () => {
+  const { authFetch } = useContext(ShopContext);
   const [users, setUsers] = useState([]);
   const [orders, setOrders] = useState([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedUser, setSelectedUser] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    totalUsers: 0,
-    activeUsers: 0,
-    totalRevenue: 0,
-    avgOrderValue: 0
-  });
+  const [actionLoading, setActionLoading] = useState(null);
 
-  useEffect(() => {
-    fetchData();
-  }, []);
+  useEffect(() => { fetchData(); }, []);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       const [usersRes, ordersRes] = await Promise.all([
-        fetch(`${API}/users`),
-        fetch(`${API}/orders`)
+        authFetch(`${API}/admin/users/?page_size=100`),
+        authFetch(`${API}/admin/orders/?page_size=100`)
       ]);
-
-      const usersData = usersRes.ok ? await usersRes.json() : [];
-      const ordersData = ordersRes.ok ? await ordersRes.json() : [];
-
-      const validUsers = Array.isArray(usersData) ? usersData : [];
-      const validOrders = Array.isArray(ordersData) ? ordersData : [];
-
-      setUsers(validUsers);
-      setOrders(validOrders);
-
-      // Calculate statistics
-      calculateStats(validUsers, validOrders);
-    } catch (err) {
-      console.error('Error fetching data:', err);
-    }
+      const ud = usersRes?.ok ? await usersRes.json() : {};
+      const od = ordersRes?.ok ? await ordersRes.json() : {};
+      setUsers(Array.isArray(ud.results || ud) ? (ud.results || ud) : []);
+      setOrders(Array.isArray(od.results || od) ? (od.results || od) : []);
+    } catch (err) { console.error(err); }
     setLoading(false);
   };
 
-  const calculateStats = (users, orders) => {
-    const totalUsers = users.length;
-    const activeUsers = users.filter(u => u.status !== 'inactive').length;
-    
-    const totalRevenue = orders.reduce((sum, order) => {
-      const orderTotal = (order.items || []).reduce((itemSum, item) =>
-        itemSum + (item.price || 0) * (item.quantity || 0), 0
-      );
-      return sum + orderTotal;
-    }, 0);
-
-    const avgOrderValue = orders.length > 0 ? totalRevenue / orders.length : 0;
-
-    setStats({
-      totalUsers,
-      activeUsers,
-      totalRevenue,
-      avgOrderValue: avgOrderValue.toFixed(2)
-    });
-  };
-
-  const getUserOrders = (userId) => {
-    return orders.filter(order => order.userId === userId || order.userId?.toString() === userId.toString());
-  };
-
-  const getUserTotalSpent = (userId) => {
-    return getUserOrders(userId).reduce((sum, order) => {
-      const orderTotal = (order.items || []).reduce((itemSum, item) =>
-        itemSum + (item.price || 0) * (item.quantity || 0), 0
-      );
-      return sum + orderTotal;
-    }, 0);
-  };
-
-  const getUserTotalOrders = (userId) => {
-    return getUserOrders(userId).length;
-  };
-
-  const handleDeleteUser = async (userId, userName) => {
-    if (!window.confirm(`Are you sure you want to delete user "${userName}"? This will also delete all their orders.`)) {
-      return;
-    }
-
+  const toggleUserBlock = async (userId) => {
+    setActionLoading(userId);
     try {
-      // First, delete all user's orders
-      const userOrders = getUserOrders(userId);
-      for (const order of userOrders) {
-        await fetch(`${API}/orders/${order.id}`, {
-          method: 'DELETE',
-        });
+      const res = await authFetch(`${API}/admin/users/${userId}/block/`, { method: 'PATCH' });
+      if (res?.ok) {
+        const result = await res.json();
+        setUsers(prev => prev.map(u => u.id === userId ? { ...u, is_active: result.is_active } : u));
+        if (selectedUser?.id === userId) setSelectedUser(prev => ({ ...prev, is_active: result.is_active }));
       }
-
-      // Then delete the user
-      const response = await fetch(`${API}/users/${userId}`, {
-        method: 'DELETE',
-      });
-
-      if (response.ok) {
-        setUsers(users.filter(u => u.id !== userId));
-        if (selectedUser?.id === userId) {
-          setSelectedUser(null);
-        }
-        alert('User deleted successfully');
-        fetchData(); // Refresh data
-      }
-    } catch (err) {
-      console.error('Error deleting user:', err);
-      alert('Failed to delete user');
-    }
+    } catch (err) { console.error(err); }
+    setActionLoading(null);
   };
 
-  const filteredUsers = users.filter(user =>
-    user.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    user.id?.toString().includes(searchQuery)
+  const getUserOrders = (uid) => orders.filter(o => String(o.user) === String(uid));
+  const getUserSpent = (uid) => getUserOrders(uid).reduce((s, o) => s + (Number(o.total_amount) || 0), 0);
+
+  const filtered = users.filter(u =>
+    u.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    u.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  const formatDate = (dateString) => {
-    if (!dateString) return 'N/A';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-IN', { 
-      day: 'numeric',
-      month: 'short', 
-      year: 'numeric' 
-    });
-  };
-
-  const getInitials = (name) => {
-    if (!name) return 'U';
-    return name.split(' ').map(word => word[0]).join('').toUpperCase().substring(0, 2);
-  };
+  const totalActive = users.filter(u => u.is_active !== false).length;
+  const totalBlocked = users.filter(u => u.is_active === false).length;
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center py-20">
-        <div className="inline-block animate-spin rounded-full h-12 w-12 border-4 border-blue-500 border-t-transparent"></div>
+      <div className="flex flex-col items-center justify-center py-32">
+        <div className="animate-spin w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full mb-4"></div>
+        <p className="text-sm text-gray-400">Loading users...</p>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="space-y-6">
       {/* Header */}
-      <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900">Users Management</h2>
-        <p className="text-gray-600 mt-1">Manage registered users and their activities</p>
-      </div>
-
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div className="bg-white rounded-xl p-5 border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.totalUsers}</p>
-            </div>
-            <div className="p-3 bg-blue-100 rounded-lg">
-              <User className="w-6 h-6 text-blue-600" />
-            </div>
-          </div>
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div>
+          <h2 className="text-2xl font-bold text-gray-900">Users</h2>
+          <p className="text-sm text-gray-500 mt-1">{users.length} total registered users</p>
         </div>
-
-        <div className="bg-white rounded-xl p-5 border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Active Users</p>
-              <p className="text-2xl font-bold text-gray-900">{stats.activeUsers}</p>
-            </div>
-            <div className="p-3 bg-green-100 rounded-lg">
-              <User className="w-6 h-6 text-green-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-5 border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Total Revenue</p>
-              <p className="text-2xl font-bold text-gray-900">₹{stats.totalRevenue.toLocaleString()}</p>
-            </div>
-            <div className="p-3 bg-purple-100 rounded-lg">
-              <IndianRupee className="w-6 h-6 text-purple-600" />
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-white rounded-xl p-5 border shadow-sm">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-500 mb-1">Avg Order Value</p>
-              <p className="text-2xl font-bold text-gray-900">₹{stats.avgOrderValue}</p>
-            </div>
-            <div className="p-3 bg-orange-100 rounded-lg">
-              <Package className="w-6 h-6 text-orange-600" />
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Search Bar */}
-      <div className="mb-6">
-        <div className="relative max-w-md">
-          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+        <div className="relative w-full sm:w-72">
+          <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
           <input
-            type="text"
-            placeholder="Search users by name, email, or ID..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            type="text" placeholder="Search by name or email..."
+            value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full border border-gray-200 rounded-lg px-4 py-2.5 pl-10 text-sm focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all"
           />
         </div>
       </div>
 
+      {/* Stat Cards */}
+      <div className="grid grid-cols-3 gap-4">
+        <div className="bg-white rounded-xl border border-gray-200 p-5">
+          <p className="text-xs font-medium text-gray-400 uppercase tracking-wider mb-1">Total</p>
+          <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+        </div>
+        <div className="bg-emerald-50 rounded-xl border border-emerald-100 p-5">
+          <p className="text-xs font-medium text-emerald-600 uppercase tracking-wider mb-1">Active</p>
+          <p className="text-2xl font-bold text-emerald-700">{totalActive}</p>
+        </div>
+        <div className="bg-red-50 rounded-xl border border-red-100 p-5">
+          <p className="text-xs font-medium text-red-500 uppercase tracking-wider mb-1">Blocked</p>
+          <p className="text-2xl font-bold text-red-600">{totalBlocked}</p>
+        </div>
+      </div>
+
       {/* Users Table */}
-      <div className="bg-white rounded-xl shadow-sm border overflow-hidden">
+      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-gray-50">
-              <tr>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">User</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Email</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Orders</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Total Spent</th>
-                <th className="text-left py-4 px-6 text-sm font-semibold text-gray-700">Actions</th>
+          <table className="w-full text-left">
+            <thead>
+              <tr className="bg-gray-50 border-b border-gray-200">
+                <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">User</th>
+                <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider hidden md:table-cell">Email</th>
+                <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider hidden sm:table-cell">Orders</th>
+                <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider hidden lg:table-cell">Spent</th>
+                <th className="px-5 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wider text-right">Actions</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
-              {filteredUsers.map(user => {
-                const totalOrders = getUserTotalOrders(user.id);
-                const totalSpent = getUserTotalSpent(user.id);
-
+            <tbody className="divide-y divide-gray-100">
+              {filtered.map(u => {
+                const oc = getUserOrders(u.id).length;
+                const sp = getUserSpent(u.id);
+                const active = u.is_active !== false;
                 return (
-                  <tr key={user.id} className="hover:bg-gray-50 transition-colors">
-                    <td className="py-4 px-6">
+                  <tr key={u.id} className="hover:bg-gray-50/50 transition-colors">
+                    <td className="px-5 py-3.5">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
-                          {getInitials(user.name)}
+                        <div className="w-8 h-8 rounded-full bg-gray-900 flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {u.name?.charAt(0)?.toUpperCase() || 'U'}
                         </div>
-                        <div>
-                          <p className="font-medium text-gray-900">{user.name}</p>
-                          <p className="text-xs text-gray-500">ID: {user.id}</p>
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-gray-800 truncate">{u.name}</p>
+                          <p className="text-xs text-gray-400 md:hidden truncate">{u.email}</p>
                         </div>
                       </div>
                     </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2 text-gray-600">
-                        <Mail className="w-4 h-4 flex-shrink-0" />
-                        <span className="truncate max-w-[200px]">{user.email}</span>
-                      </div>
+                    <td className="px-5 py-3.5 text-sm text-gray-500 hidden md:table-cell">{u.email}</td>
+                    <td className="px-5 py-3.5">
+                      <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full ${active ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-600'}`}>
+                        {active ? 'Active' : 'Blocked'}
+                      </span>
                     </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <ShoppingBag className="w-4 h-4 text-blue-500" />
-                        <span className="font-medium">{totalOrders}</span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <IndianRupee className="w-4 h-4 text-green-500" />
-                        <span className="font-semibold text-green-600">
-                          ₹{totalSpent.toFixed(2)}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-4 px-6">
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => setSelectedUser(user)}
-                          className="px-3 py-1.5 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition shadow-sm"
-                        >
-                          View Details
+                    <td className="px-5 py-3.5 text-sm font-medium text-gray-800 hidden sm:table-cell">{oc}</td>
+                    <td className="px-5 py-3.5 text-sm font-medium text-gray-800 hidden lg:table-cell">₹{sp.toLocaleString()}</td>
+                    <td className="px-5 py-3.5 text-right">
+                      <div className="flex items-center justify-end gap-2">
+                        <button onClick={() => setSelectedUser(u)}
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                          View
                         </button>
                         <button
-                          onClick={() => handleDeleteUser(user.id, user.name)}
-                          className="p-2 bg-red-100 text-red-600 rounded-lg hover:bg-red-200 transition"
-                          title="Delete User"
+                          disabled={actionLoading === u.id}
+                          onClick={() => toggleUserBlock(u.id)}
+                          className={`px-3 py-1.5 text-xs font-medium rounded-lg border transition-all ${
+                            active
+                              ? 'text-red-600 border-red-200 hover:bg-red-600 hover:text-white hover:border-red-600'
+                              : 'text-emerald-600 border-emerald-200 hover:bg-emerald-600 hover:text-white hover:border-emerald-600'
+                          } ${actionLoading === u.id ? 'opacity-50 cursor-wait' : ''}`}
                         >
-                          <Trash2 className="w-4 h-4" />
+                          {active ? 'Block' : 'Unblock'}
                         </button>
                       </div>
                     </td>
@@ -291,167 +160,83 @@ const UsersManagement = () => {
               })}
             </tbody>
           </table>
-        </div>
-
-        {filteredUsers.length === 0 && (
-          <div className="text-center py-12">
-            <User className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">No users found</p>
-            <p className="text-gray-400 text-sm mt-1">Try a different search term</p>
-          </div>
-        )}
-
-        <div className="px-6 py-4 border-t bg-gray-50">
-          <div className="flex justify-between items-center">
-            <div className="text-sm text-gray-600">
-              Showing <span className="font-semibold">{filteredUsers.length}</span> of{' '}
-              <span className="font-semibold">{users.length}</span> users
-            </div>
-          </div>
+          {filtered.length === 0 && (
+            <div className="py-16 text-center text-sm text-gray-400">No users match your search</div>
+          )}
         </div>
       </div>
 
-      {/* User Details Modal */}
+      {/* User Detail Panel */}
       {selectedUser && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="sticky top-0 bg-white border-b px-6 py-4 flex justify-between items-center z-10">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-bold text-lg">
-                  {getInitials(selectedUser.name)}
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/30" onClick={() => setSelectedUser(null)} />
+          <div className="relative bg-white w-full max-w-lg rounded-2xl shadow-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden">
+            <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-start">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-full bg-gray-900 flex items-center justify-center text-white text-lg font-bold">
+                  {selectedUser.name?.charAt(0)?.toUpperCase() || 'U'}
                 </div>
                 <div>
-                  <h2 className="text-xl font-bold text-gray-900">{selectedUser.name}</h2>
-                  <p className="text-gray-600 text-sm">User Details</p>
+                  <h3 className="text-lg font-bold text-gray-900">{selectedUser.name}</h3>
+                  <p className="text-xs text-gray-400">{selectedUser.email}</p>
                 </div>
               </div>
-              <button
-                onClick={() => setSelectedUser(null)}
-                className="text-gray-500 hover:text-gray-700 p-2 hover:bg-gray-100 rounded-lg transition"
-              >
-                <X className="w-6 h-6" />
+              <button onClick={() => setSelectedUser(null)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-800">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
 
-            <div className="p-6">
-              {/* User Info */}
-              <div className="mb-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">User ID</p>
-                    <p className="font-mono font-semibold text-gray-900">#{selectedUser.id}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <p className="text-sm text-gray-600 mb-1">Email</p>
-                    <p className="font-medium text-gray-900 truncate">{selectedUser.email}</p>
-                  </div>
-                  <div className="bg-gray-50 rounded-lg p-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <Calendar className="w-4 h-4 text-gray-500" />
-                      <p className="text-sm text-gray-600">Joined Date</p>
-                    </div>
-                    <p className="font-medium text-gray-900">{formatDate(selectedUser.createdAt)}</p>
-                  </div>
+            <div className="flex-1 overflow-y-auto p-6 space-y-5">
+              <div className="grid grid-cols-2 gap-3">
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-400 mb-1">Total Orders</p>
+                  <p className="text-2xl font-bold text-gray-900">{getUserOrders(selectedUser.id).length}</p>
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="bg-blue-50 rounded-lg p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-blue-600 mb-1">Total Orders</p>
-                        <p className="text-3xl font-bold text-gray-900">
-                          {getUserTotalOrders(selectedUser.id)}
-                        </p>
-                      </div>
-                      <ShoppingBag className="w-10 h-10 text-blue-500 opacity-70" />
-                    </div>
-                  </div>
-                  <div className="bg-green-50 rounded-lg p-5">
-                    <div className="flex items-center justify-between">
-                      <div>
-                        <p className="text-sm text-green-600 mb-1">Total Spent</p>
-                        <p className="text-3xl font-bold text-gray-900">
-                          ₹{getUserTotalSpent(selectedUser.id).toFixed(2)}
-                        </p>
-                      </div>
-                      <IndianRupee className="w-10 h-10 text-green-500 opacity-70" />
-                    </div>
-                  </div>
+                <div className="bg-gray-50 rounded-xl p-4">
+                  <p className="text-xs text-gray-400 mb-1">Total Spent</p>
+                  <p className="text-2xl font-bold text-gray-900">₹{getUserSpent(selectedUser.id).toLocaleString()}</p>
                 </div>
               </div>
 
-              {/* Order History */}
               <div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                  <Clock className="w-5 h-5" />
-                  Order History
-                </h3>
-                
-                {getUserOrders(selectedUser.id).length === 0 ? (
-                  <div className="text-center py-8 bg-gray-50 rounded-lg">
-                    <ShoppingBag className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                    <p className="text-gray-500">No orders placed yet</p>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {getUserOrders(selectedUser.id).map(order => {
-                      const total = (order.items || []).reduce((sum, item) =>
-                        sum + (item.price || 0) * (item.quantity || 0), 0
-                      );
-                      
-                      return (
-                        <div key={order.id} className="border rounded-lg p-4 hover:bg-gray-50 transition">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <p className="font-medium text-gray-900">Order #{order.id}</p>
-                              <p className="text-sm text-gray-500 mt-1">
-                                {formatDate(order.date)} • {order.items?.length || 0} item(s)
-                              </p>
-                            </div>
-                            <div className="text-right">
-                              <p className="text-lg font-bold text-green-600">₹{total.toFixed(2)}</p>
-                              <span className={`inline-block px-3 py-1 text-xs rounded-full mt-1 ${
-                                order.status === 'delivered' ? 'bg-green-100 text-green-800' :
-                                order.status === 'shipped' ? 'bg-blue-100 text-blue-800' :
-                                order.status === 'processing' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                              }`}>
-                                {order.status || 'pending'}
-                              </span>
-                            </div>
-                          </div>
-                          
-                          {/* Order Items Preview */}
-                          {(order.items || []).slice(0, 2).map((item, index) => (
-                            <div key={index} className="flex items-center gap-3 p-2 bg-white rounded">
-                              <div className="w-10 h-10 bg-gray-200 rounded flex items-center justify-center">
-                                <Package className="w-5 h-5 text-gray-500" />
-                              </div>
-                              <div className="flex-1">
-                                <p className="text-sm font-medium text-gray-900 truncate">
-                                  {item.name || 'Unknown Product'}
-                                </p>
-                                <p className="text-xs text-gray-500">
-                                  Qty: {item.quantity} × ₹{item.price?.toFixed(2) || '0.00'}
-                                </p>
-                              </div>
-                              <div className="text-sm font-medium">
-                                ₹{((item.price || 0) * (item.quantity || 1)).toFixed(2)}
-                              </div>
-                            </div>
-                          ))}
-                          
-                          {(order.items || []).length > 2 && (
-                            <p className="text-center text-sm text-gray-500 mt-3">
-                              + {(order.items || []).length - 2} more items
-                            </p>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Recent Orders</p>
+                <div className="space-y-2">
+                  {getUserOrders(selectedUser.id).slice(-5).reverse().map(o => (
+                    <div key={o.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="text-sm font-medium text-gray-800">Order #{o.id}</p>
+                        <p className="text-xs text-gray-400">{new Date(o.created_at).toLocaleDateString()}</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-sm font-bold text-gray-900">₹{Number(o.total_amount).toLocaleString()}</p>
+                        <span className={`text-[10px] font-semibold uppercase ${
+                          o.status === 'delivered' ? 'text-emerald-600' : o.status === 'cancelled' ? 'text-red-500' : 'text-gray-500'
+                        }`}>{o.status}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {getUserOrders(selectedUser.id).length === 0 && (
+                    <p className="text-center text-xs text-gray-400 py-6">No orders yet</p>
+                  )}
+                </div>
               </div>
+            </div>
+
+            <div className="px-6 py-4 border-t border-gray-100 flex gap-3">
+              <button onClick={() => setSelectedUser(null)}
+                className="flex-1 py-3 text-sm font-medium text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                Close
+              </button>
+              <button
+                onClick={() => { toggleUserBlock(selectedUser.id); }}
+                className={`flex-1 py-3 text-sm font-bold rounded-lg transition-all ${
+                  selectedUser.is_active !== false
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-emerald-600 text-white hover:bg-emerald-700'
+                }`}
+              >
+                {selectedUser.is_active !== false ? 'Block User' : 'Unblock User'}
+              </button>
             </div>
           </div>
         </div>

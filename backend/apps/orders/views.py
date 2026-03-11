@@ -78,10 +78,11 @@ class PlaceOrderView(generics.CreateAPIView):
         serializer.is_valid(raise_exception=True)
 
         total = sum(i.product.price * i.quantity for i in cart.items.all())
+        import json
         order = Order.objects.create(
             user=request.user,
             payment_method=serializer.validated_data["payment_method"],
-            shipping_address=serializer.validated_data["shipping_address"],
+            shipping_address=json.dumps(serializer.validated_data["shipping_address"]),
             total_amount=total,
         )
 

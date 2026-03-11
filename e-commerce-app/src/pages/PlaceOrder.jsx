@@ -42,8 +42,8 @@ const PlaceOrder = () => {
       return;
     }
 
-    // Build shipping address string
-    const address = `${formData.firstName} ${formData.lastName}, ${formData.street}, ${formData.city}, ${formData.state}, ${formData.zipcode}, ${formData.country}. Phone: ${formData.phone}`;
+    // Use the formData object directly for structured address data
+    const address = formData;
 
     try {
       const res = await authFetch(`${import.meta.env.VITE_API_URL || "http://localhost:8000/api"}/orders/place/`, {
