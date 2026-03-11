@@ -17,6 +17,7 @@ class AdminOrderItemSerializer(serializers.ModelSerializer):
             "cancelled",
         ]
 
+
 class AdminOrderSerializer(serializers.ModelSerializer):
     items = AdminOrderItemSerializer(many=True, read_only=True)
     user_email = serializers.CharField(source="user.email", read_only=True)

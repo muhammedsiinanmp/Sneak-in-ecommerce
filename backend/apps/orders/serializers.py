@@ -17,6 +17,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "cancelled",
         ]
 
+
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     shipping_address = serializers.SerializerMethodField()
