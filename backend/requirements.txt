@@ -15,7 +15,6 @@ celery==5.5.2
 redis==5.2.1
 kombu==5.6.2
 vine==5.1.0
-billiard==4.2.0
 flower==2.0.1
 
 # ── API Documentation (Added) ──
