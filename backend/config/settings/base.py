@@ -3,10 +3,17 @@ from pathlib import Path
 from decouple import config
 from datetime import timedelta
 from celery.schedules import crontab
+import sentry_sdk
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = config("SECRET_KEY")
+
+DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+LANGUAGE_CODE = 'en-us'
+TIME_ZONE = 'Asia/Kolkata'
+USE_I18N = True
+USE_TZ = True
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -22,6 +29,7 @@ INSTALLED_APPS = [
     'django_filters',
     'rest_framework_simplejwt.token_blacklist',
     'django_celery_beat',
+    'drf_spectacular',
 
     # Local apps
     'apps.accounts',
@@ -56,6 +64,23 @@ REST_FRAMEWORK = {
         'rest_framework.filters.SearchFilter',
         'rest_framework.filters.OrderingFilter',
     ],
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle',
+    ],
+    'DEFAULT_THROTTLE_RATES': {
+        'anon': '30/minute',
+        'user': '120/minute',
+    },
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+}
+
+# ---------- API Docs (drf-spectacular) ----------
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'SneakIn API',
+    'DESCRIPTION': 'API documentation for the SneakIn E-Commerce Platform',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
 }
 
 SIMPLE_JWT = {
@@ -79,6 +104,15 @@ CELERY_BEAT_SCHEDULE = {
         'schedule': crontab(hour=0, minute=30),  # 12:30 AM daily
     },
 }
+
+# ---------- Sentry Error Monitoring ----------
+SENTRY_DSN = config('SENTRY_DSN', default='')
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        traces_sample_rate=0.1,
+        profiles_sample_rate=0.1,
+    )
 
 # ---------- Email ----------
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'

@@ -2,6 +2,7 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.contrib.auth import get_user_model
 from django.db.models import Sum, Q
 from django.utils import timezone
@@ -13,6 +14,12 @@ from apps.products.models import Product
 from .admin_serializers import AdminUserSerializer, AdminUserUpdateSerializer
 
 User = get_user_model()
+
+
+class AdminPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class AdminDashboardAPIView(APIView):
@@ -99,8 +106,10 @@ class AdminUserListAPIView(APIView):
         if role in ["admin", "user"]:
             queryset = queryset.filter(role=role)
 
-        serializer = AdminUserSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = AdminUserSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class AdminUserDetailAPIView(APIView):

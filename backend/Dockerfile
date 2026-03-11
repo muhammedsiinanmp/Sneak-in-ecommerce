@@ -17,7 +17,14 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy project
 COPY . .
 
+# Collect static files for Nginx to serve
+RUN python manage.py collectstatic --noinput --settings=config.settings.dev 2>/dev/null || true
+
+# Create non-root user for security
+RUN addgroup --system appgroup && adduser --system --ingroup appgroup appuser
+USER appuser
+
 EXPOSE 8000
 
-# Use Gunicorn (WSGI server)
-CMD ["gunicorn", "config.wsgi:application", "--bind", "0.0.0.0:8000"]
+# Use Gunicorn with config file
+CMD ["gunicorn", "config.wsgi:application", "--config", "gunicorn.conf.py"]

@@ -2,11 +2,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 
 from apps.accounts.permissions import IsAdminUser
 from .models import Order
 from .admin_serializers import AdminOrderSerializer
+
+
+class AdminPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class AdminOrderListAPIView(APIView):
@@ -31,8 +38,10 @@ class AdminOrderListAPIView(APIView):
                 Q(user__email__icontains=search) | Q(user__name__icontains=search)
             )
 
-        serializer = AdminOrderSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = AdminOrderSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 class AdminOrderDetailAPIView(APIView):
