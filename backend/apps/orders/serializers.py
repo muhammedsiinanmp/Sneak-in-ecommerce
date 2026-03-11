@@ -1,3 +1,4 @@
+import json
 from rest_framework import serializers
 from .models import Order, OrderItem
 
@@ -15,9 +16,6 @@ class OrderItemSerializer(serializers.ModelSerializer):
             "price",
             "cancelled",
         ]
-
-
-import json
 
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)

@@ -1,3 +1,4 @@
+import json
 from rest_framework import serializers
 from .models import Order, OrderItem
 
@@ -15,9 +16,6 @@ class AdminOrderItemSerializer(serializers.ModelSerializer):
             "price",
             "cancelled",
         ]
-
-
-import json
 
 class AdminOrderSerializer(serializers.ModelSerializer):
     items = AdminOrderItemSerializer(many=True, read_only=True)
