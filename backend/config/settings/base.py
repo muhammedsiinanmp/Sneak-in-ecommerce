@@ -2,6 +2,7 @@ import os
 from pathlib import Path
 from decouple import config
 from datetime import timedelta
+from celery.schedules import crontab
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
@@ -71,6 +72,13 @@ CELERY_ACCEPT_CONTENT = ['json']
 CELERY_TASK_SERIALIZER = 'json'
 CELERY_RESULT_SERIALIZER = 'json'
 CELERY_TIMEZONE = 'Asia/Kolkata'
+
+CELERY_BEAT_SCHEDULE = {
+    'daily-sales-report': {
+        'task': 'apps.orders.tasks.generate_daily_sales_report',
+        'schedule': crontab(hour=0, minute=30),  # 12:30 AM daily
+    },
+}
 
 # ---------- Email ----------
 EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
