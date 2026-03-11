@@ -2,11 +2,18 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from rest_framework.permissions import IsAuthenticated
+from rest_framework.pagination import PageNumberPagination
 from django.db.models import Q
 
 from apps.accounts.permissions import IsAdminUser
 from .models import Product
 from .admin_serializers import AdminProductReadSerializer, AdminProductWriteSerializer
+
+
+class AdminPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 100
 
 
 class AdminProductListCreateAPIView(APIView):
@@ -39,8 +46,10 @@ class AdminProductListCreateAPIView(APIView):
         if category_id:
             queryset = queryset.filter(category_id=category_id)
 
-        serializer = AdminProductReadSerializer(queryset, many=True)
-        return Response(serializer.data)
+        paginator = AdminPagination()
+        page = paginator.paginate_queryset(queryset, request)
+        serializer = AdminProductReadSerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
     def post(self, request):
         serializer = AdminProductWriteSerializer(data=request.data)

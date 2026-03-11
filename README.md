@@ -197,11 +197,50 @@ npm run dev
 | `CORS_ORIGINS` | Allowed CORS origins | `http://localhost:5173` |
 ---
 ## API Overview
+
+### 📖 Interactive API Docs
+- **Swagger UI**: `http://localhost/api/docs/`
+- **Redoc**: `http://localhost/api/docs/redoc/`
+
+### Customer-Facing Endpoints
+| Endpoint | Method | Auth | Description |
+|---|---|---|---|
+| `/api/auth/register/` | POST | None | User registration |
+| `/api/auth/login/` | POST | None | JWT login (returns access + refresh) |
+| `/api/auth/token/refresh/` | POST | None | Refresh access token |
+| `/api/auth/logout/` | POST | JWT | Blacklist refresh token |
+| `/api/auth/profile/` | GET, PUT | JWT | View/update user profile |
+| `/api/products/` | GET | None | List products (paginated) |
+| `/api/products/<id>/` | GET | None | Product details |
+| `/api/cart/` | GET, POST | JWT | View/add to cart |
+| `/api/cart/<id>/` | PATCH, DELETE | JWT | Update/remove cart item |
+| `/api/orders/` | GET | JWT | List user's orders |
+| `/api/orders/place/` | POST | JWT | Place a new order |
+| `/api/orders/<id>/cancel/` | PATCH | JWT | Cancel an order |
+| `/api/wishlist/` | GET, POST | JWT | View/add to wishlist |
+
+### Admin Endpoints (Require `admin` role)
 | Endpoint | Method | Description |
 |---|---|---|
-| `/admin/` | GET | Django admin panel |
-| `/api/accounts/` | — | User authentication endpoints |
-> **Note**: API endpoints will expand as more apps are added to the backend.
+| `/api/admin/dashboard/` | GET | Dashboard stats (users, orders, revenue) |
+| `/api/admin/users/` | GET | List users (paginated, `?search=&role=`) |
+| `/api/admin/users/<id>/` | GET, PATCH, DELETE | User detail / update / deactivate |
+| `/api/admin/users/<id>/block/` | PATCH | Toggle block/unblock user |
+| `/api/admin/products/` | GET, POST | List (paginated) / create products |
+| `/api/admin/products/<id>/` | GET, PATCH, DELETE | Product detail / update / delete |
+| `/api/admin/orders/` | GET | List orders (paginated, `?status=&search=`) |
+| `/api/admin/orders/<id>/` | GET, PATCH | Order detail / status update |
+| `/api/admin/notifications/` | GET | List notifications (`?is_read=&type=`) |
+| `/api/admin/notifications/<id>/read/` | PATCH | Mark notification as read |
+| `/api/admin/notifications/read-all/` | PATCH | Mark all as read |
+| `/api/admin/notifications/unread-count/` | GET | Unread count |
+
+### Infrastructure Endpoints
+| Endpoint | Method | Description |
+|---|---|---|
+| `/api/health/` | GET | Service health check (DB + Redis) |
+| `/api/docs/` | GET | Swagger UI (API documentation) |
+| `/api/docs/redoc/` | GET | Redoc (API documentation) |
 ---
 ## Screenshots
 > 📸 *Add screenshots of your application here*
