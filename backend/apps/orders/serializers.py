@@ -17,8 +17,11 @@ class OrderItemSerializer(serializers.ModelSerializer):
         ]
 
 
+import json
+
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
+    shipping_address = serializers.SerializerMethodField()
 
     class Meta:
         model = Order
@@ -34,7 +37,13 @@ class OrderSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ["id", "user", "status", "total_amount", "created_at"]
 
+    def get_shipping_address(self, obj):
+        try:
+            return json.loads(obj.shipping_address)
+        except (ValueError, TypeError, json.JSONDecodeError):
+            return obj.shipping_address
+
 
 class PlaceOrderSerializer(serializers.Serializer):
     payment_method = serializers.ChoiceField(choices=Order.PAYMENT_CHOICES)
-    shipping_address = serializers.CharField(required=True)
+    shipping_address = serializers.JSONField(required=True)

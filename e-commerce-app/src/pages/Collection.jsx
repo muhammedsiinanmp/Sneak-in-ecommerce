@@ -3,6 +3,7 @@ import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title'
 import ProductItem from '../components/ProductItem'
 
+const PRODUCTS_PER_PAGE = 12;
 
 const Collection = () => {
 
@@ -15,6 +16,7 @@ const Collection = () => {
   const [category, setCategory] = useState([])
   const [subCategegory, setSubCategory] = useState([])
   const[sortType,setSortType]=useState('relevant')
+  const [currentPage, setCurrentPage] = useState(1)
 
   const toggleCategory = (e) => {
     if (category.includes(e.target.value)) {
@@ -75,11 +77,36 @@ const Collection = () => {
 
   useEffect(() => {
     applyFilter();
+    setCurrentPage(1);
   }, [category, subCategegory,search,showSearch])
 
   useEffect(()=>{
     sortProduct();
+    setCurrentPage(1);
   },[sortType])
+
+  // Pagination logic
+  const totalPages = Math.ceil(filterProducts.length / PRODUCTS_PER_PAGE);
+  const startIdx = (currentPage - 1) * PRODUCTS_PER_PAGE;
+  const paginatedProducts = filterProducts.slice(startIdx, startIdx + PRODUCTS_PER_PAGE);
+
+  const goToPage = (page) => {
+    setCurrentPage(page);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  // Generate page numbers to display
+  const getPageNumbers = () => {
+    const pages = [];
+    const maxVisible = 5;
+    let start = Math.max(1, currentPage - Math.floor(maxVisible / 2));
+    let end = Math.min(totalPages, start + maxVisible - 1);
+    if (end - start < maxVisible - 1) {
+      start = Math.max(1, end - maxVisible + 1);
+    }
+    for (let i = start; i <= end; i++) pages.push(i);
+    return pages;
+  };
 
 
   return (
@@ -136,14 +163,89 @@ const Collection = () => {
             <option value="high-low">Sort by : High-Low</option>
           </select>
         </div>
+
+        {/* Product count */}
+        <p className="text-xs text-gray-400 mb-4">
+          Showing {paginatedProducts.length} of {filterProducts.length} products
+          {totalPages > 1 && <span> &middot; Page {currentPage} of {totalPages}</span>}
+        </p>
+
         {/* Map Products */}
         <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
           {
-            filterProducts.map((item, index) => (
+            paginatedProducts.map((item, index) => (
               <ProductItem key={index} name={item.name} id={item.id} price={item.price} image={item.image} />
             ))
           }
         </div>
+
+        {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="flex items-center justify-center gap-2 mt-10 mb-6">
+            {/* Previous */}
+            <button
+              disabled={currentPage === 1}
+              onClick={() => goToPage(currentPage - 1)}
+              className={`px-3 py-2 text-sm border transition-colors ${
+                currentPage === 1
+                  ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:bg-black hover:text-white hover:border-black'
+              }`}
+            >
+              ← Prev
+            </button>
+
+            {/* First page + ellipsis */}
+            {getPageNumbers()[0] > 1 && (
+              <>
+                <button onClick={() => goToPage(1)}
+                  className="w-10 h-10 text-sm border border-gray-300 text-gray-700 hover:bg-black hover:text-white hover:border-black transition-colors">
+                  1
+                </button>
+                {getPageNumbers()[0] > 2 && <span className="text-gray-400 px-1">…</span>}
+              </>
+            )}
+
+            {/* Page numbers */}
+            {getPageNumbers().map(page => (
+              <button
+                key={page}
+                onClick={() => goToPage(page)}
+                className={`w-10 h-10 text-sm border transition-colors ${
+                  currentPage === page
+                    ? 'bg-black text-white border-black'
+                    : 'border-gray-300 text-gray-700 hover:bg-black hover:text-white hover:border-black'
+                }`}
+              >
+                {page}
+              </button>
+            ))}
+
+            {/* Last page + ellipsis */}
+            {getPageNumbers()[getPageNumbers().length - 1] < totalPages && (
+              <>
+                {getPageNumbers()[getPageNumbers().length - 1] < totalPages - 1 && <span className="text-gray-400 px-1">…</span>}
+                <button onClick={() => goToPage(totalPages)}
+                  className="w-10 h-10 text-sm border border-gray-300 text-gray-700 hover:bg-black hover:text-white hover:border-black transition-colors">
+                  {totalPages}
+                </button>
+              </>
+            )}
+
+            {/* Next */}
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => goToPage(currentPage + 1)}
+              className={`px-3 py-2 text-sm border transition-colors ${
+                currentPage === totalPages
+                  ? 'border-gray-100 text-gray-300 cursor-not-allowed'
+                  : 'border-gray-300 text-gray-700 hover:bg-black hover:text-white hover:border-black'
+              }`}
+            >
+              Next →
+            </button>
+          </div>
+        )}
       </div>
 
     </div>
@@ -151,3 +253,4 @@ const Collection = () => {
 }
 
 export default Collection
+
