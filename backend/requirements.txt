@@ -1,25 +1,49 @@
-asgiref==3.11.1
-attrs==25.4.0
-certifi==2026.2.25
+# ── Core ──
 Django==6.0.2
-django-cors-headers==4.9.0
-django-filter==25.2
 djangorestframework==3.16.1
 djangorestframework_simplejwt==5.5.1
-drf-spectacular==0.29.0
+django-cors-headers==4.9.0
+django-filter==25.2
+python-decouple==3.8
 gunicorn==25.1.0
+
+# ── Database ──
+psycopg2-binary==2.9.11
+
+# ── Celery & Redis ──
+celery==5.5.2
+redis==6.0.0
+django-celery-beat==2.8.0
+flower==2.0.1
+
+# ── API Documentation ──
+drf-spectacular==0.29.0
+
+# ── Monitoring ──
+sentry-sdk==2.54.0
+
+# ── Utilities ──
+pillow==12.1.1
+PyJWT==2.11.0
+
+# ── Testing & Linting ──
+pytest==8.5.1
+pytest-django==4.11.0
+pytest-cov==6.1.1
+factory-boy==3.3.3
+flake8==7.3.0
+
+# ── Auto-installed dependencies ──
+asgiref==3.11.1
+sqlparse==0.5.5
+PyYAML==6.0.3
+packaging==26.0
+attrs==25.4.0
+certifi==2026.2.25
 inflection==0.5.1
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
-packaging==26.0
-pillow==12.1.1
-psycopg2-binary==2.9.11
-PyJWT==2.11.0
-python-decouple==3.8
-PyYAML==6.0.3
 referencing==0.37.0
 rpds-py==0.30.0
-sentry-sdk==2.54.0
-sqlparse==0.5.5
 uritemplate==4.2.0
 urllib3==2.6.3
