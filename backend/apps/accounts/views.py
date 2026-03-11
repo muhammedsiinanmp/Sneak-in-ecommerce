@@ -26,19 +26,23 @@ class RegisterView(generics.CreateAPIView):
 
         # Notify admins about new registration
         from apps.notifications.utils import send_admin_notification
+
         send_admin_notification(
-            title='New User Registered',
-            message=f'{user.name} ({user.email}) just created an account.',
-            notification_type='new_user',
+            title="New User Registered",
+            message=f"{user.name} ({user.email}) just created an account.",
+            notification_type="new_user",
         )
 
-        return Response({
-            'user': UserProfileSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token)
-            }
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "user": UserProfileSerializer(user).data,
+                "tokens": {
+                    "refresh": str(refresh),
+                    "access": str(refresh.access_token),
+                },
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 
 class LogoutView(generics.GenericAPIView):
@@ -46,12 +50,14 @@ class LogoutView(generics.GenericAPIView):
 
     def post(self, request):
         try:
-            refresh_token = request.data['refresh']
+            refresh_token = request.data["refresh"]
             token = RefreshToken(refresh_token)
             token.blacklist()
-            return Response({'detail': 'Logged out'}, status=status.HTTP_200_OK)
+            return Response({"detail": "Logged out"}, status=status.HTTP_200_OK)
         except Exception:
-            return Response({'detail': 'Invalid token'}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"detail": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST
+            )
 
 
 class ProfileView(generics.RetrieveUpdateAPIView):

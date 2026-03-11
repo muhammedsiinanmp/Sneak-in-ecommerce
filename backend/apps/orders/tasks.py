@@ -25,35 +25,38 @@ def generate_daily_sales_report():
     orders_qs = Order.objects.filter(created_at__date=yesterday)
 
     total_orders = orders_qs.count()
-    delivered_orders = orders_qs.filter(status='delivered').count()
-    cancelled_orders = orders_qs.filter(status='cancelled').count()
-    pending_orders = orders_qs.filter(status='pending').count()
+    delivered_orders = orders_qs.filter(status="delivered").count()
+    cancelled_orders = orders_qs.filter(status="cancelled").count()
+    pending_orders = orders_qs.filter(status="pending").count()
 
-    total_revenue = orders_qs.filter(
-        status='delivered'
-    ).aggregate(total=Sum('total_amount'))['total'] or 0
+    total_revenue = (
+        orders_qs.filter(status="delivered").aggregate(total=Sum("total_amount"))[
+            "total"
+        ]
+        or 0
+    )
 
-    total_items_sold = OrderItem.objects.filter(
-        order__created_at__date=yesterday,
-        order__status='delivered',
-        cancelled=False
-    ).aggregate(total=Sum('quantity'))['total'] or 0
+    total_items_sold = (
+        OrderItem.objects.filter(
+            order__created_at__date=yesterday,
+            order__status="delivered",
+            cancelled=False,
+        ).aggregate(total=Sum("quantity"))["total"]
+        or 0
+    )
 
     # Top 5 selling products
     top_products = list(
-        OrderItem.objects.filter(
-            order__created_at__date=yesterday,
-            cancelled=False
-        )
-        .values('product_name')
-        .annotate(total_sold=Sum('quantity'))
-        .order_by('-total_sold')[:5]
+        OrderItem.objects.filter(order__created_at__date=yesterday, cancelled=False)
+        .values("product_name")
+        .annotate(total_sold=Sum("quantity"))
+        .order_by("-total_sold")[:5]
     )
 
     # Log the report
     report = (
         f"\n📊 Daily Sales Report — {yesterday}\n"
-        f"{'='*40}\n"
+        f"{'=' * 40}\n"
         f"Total Orders: {total_orders}\n"
         f"Delivered: {delivered_orders}\n"
         f"Cancelled: {cancelled_orders}\n"
@@ -69,12 +72,14 @@ def generate_daily_sales_report():
 
     # Email to all admin users
     admin_emails = list(
-        User.objects.filter(role='admin', is_active=True).values_list('email', flat=True)
+        User.objects.filter(role="admin", is_active=True).values_list(
+            "email", flat=True
+        )
     )
 
     if admin_emails:
         send_mail(
-            subject=f'SneakIn Daily Sales Report — {yesterday}',
+            subject=f"SneakIn Daily Sales Report — {yesterday}",
             message=report,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=admin_emails,

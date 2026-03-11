@@ -7,8 +7,20 @@ from .views import (
 )
 
 urlpatterns = [
-    path('', AdminNotificationListAPIView.as_view(), name='admin-notification-list'),
-    path('<int:pk>/read/', AdminNotificationMarkReadAPIView.as_view(), name='admin-notification-read'),
-    path('read-all/', AdminNotificationMarkAllReadAPIView.as_view(), name='admin-notification-read-all'),
-    path('unread-count/', AdminNotificationUnreadCountAPIView.as_view(), name='admin-notification-unread-count'),
+    path("", AdminNotificationListAPIView.as_view(), name="admin-notification-list"),
+    path(
+        "<int:pk>/read/",
+        AdminNotificationMarkReadAPIView.as_view(),
+        name="admin-notification-read",
+    ),
+    path(
+        "read-all/",
+        AdminNotificationMarkAllReadAPIView.as_view(),
+        name="admin-notification-read-all",
+    ),
+    path(
+        "unread-count/",
+        AdminNotificationUnreadCountAPIView.as_view(),
+        name="admin-notification-unread-count",
+    ),
 ]
