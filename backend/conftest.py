@@ -12,10 +12,10 @@ User = get_user_model()
 def admin_user(db):
     """Create and return an admin user."""
     return User.objects.create_user(
-        email='admin@test.com',
-        name='Admin User',
-        password='admin123456',
-        role='admin',
+        email="admin@test.com",
+        name="Admin User",
+        password="admin123456",
+        role="admin",
         is_staff=True,
     )
 
@@ -24,10 +24,10 @@ def admin_user(db):
 def regular_user(db):
     """Create and return a regular user."""
     return User.objects.create_user(
-        email='user@test.com',
-        name='Regular User',
-        password='user123456',
-        role='user',
+        email="user@test.com",
+        name="Regular User",
+        password="user123456",
+        role="user",
     )
 
 
@@ -36,7 +36,7 @@ def admin_client(admin_user):
     """Return an authenticated API client for admin user."""
     client = APIClient()
     refresh = RefreshToken.for_user(admin_user)
-    client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
     return client
 
 
@@ -45,7 +45,7 @@ def user_client(regular_user):
     """Return an authenticated API client for regular user."""
     client = APIClient()
     refresh = RefreshToken.for_user(regular_user)
-    client.credentials(HTTP_AUTHORIZATION=f'Bearer {refresh.access_token}')
+    client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
     return client
 
 
@@ -57,35 +57,35 @@ def unauthenticated_client():
 
 @pytest.fixture
 def sample_brand(db):
-    return Brand.objects.create(name='Nike', logo_url='https://example.com/nike.png')
+    return Brand.objects.create(name="Nike", logo_url="https://example.com/nike.png")
 
 
 @pytest.fixture
 def sample_category(db):
-    return Category.objects.create(name='Running')
+    return Category.objects.create(name="Running")
 
 
 @pytest.fixture
 def sample_subcategory(db):
-    return SubCategory.objects.create(name='Trail Running')
+    return SubCategory.objects.create(name="Trail Running")
 
 
 @pytest.fixture
 def sample_product(db, sample_brand, sample_category, sample_subcategory):
     product = Product.objects.create(
-        name='Air Max 90',
+        name="Air Max 90",
         brand=sample_brand,
         category=sample_category,
         subcategory=sample_subcategory,
         price=12999.00,
         mrp=15999.00,
-        description='Classic sneaker',
+        description="Classic sneaker",
         in_stock=True,
         stock=50,
     )
     ProductImage.objects.create(
         product=product,
-        image_url='https://example.com/airmax.jpg',
+        image_url="https://example.com/airmax.jpg",
         display_order=0,
     )
     return product
@@ -95,16 +95,16 @@ def sample_product(db, sample_brand, sample_category, sample_subcategory):
 def sample_order(db, regular_user, sample_product):
     order = Order.objects.create(
         user=regular_user,
-        status='pending',
-        payment_method='cod',
+        status="pending",
+        payment_method="cod",
         total_amount=12999.00,
-        shipping_address='123 Test Street',
+        shipping_address="123 Test Street",
     )
     OrderItem.objects.create(
         order=order,
         product=sample_product,
         product_name=sample_product.name,
-        product_image='https://example.com/airmax.jpg',
+        product_image="https://example.com/airmax.jpg",
         size=42,
         quantity=1,
         price=12999.00,

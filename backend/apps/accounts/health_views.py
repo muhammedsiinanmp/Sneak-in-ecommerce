@@ -12,36 +12,34 @@ class HealthCheckAPIView(APIView):
     GET /api/health/
     Returns the health status of all services.
     """
+
     permission_classes = [AllowAny]
 
     def get(self, request):
-        health = {
-            'status': 'healthy',
-            'services': {}
-        }
+        health = {"status": "healthy", "services": {}}
 
         # Check Database
         try:
             connection.ensure_connection()
-            health['services']['database'] = 'up'
+            health["services"]["database"] = "up"
         except Exception as e:
-            health['services']['database'] = f'down: {str(e)}'
-            health['status'] = 'unhealthy'
+            health["services"]["database"] = f"down: {str(e)}"
+            health["status"] = "unhealthy"
 
         # Check Redis
         try:
             r = redis.Redis.from_url(
-                settings.CELERY_BROKER_URL,
-                socket_connect_timeout=2
+                settings.CELERY_BROKER_URL, socket_connect_timeout=2
             )
             r.ping()
-            health['services']['redis'] = 'up'
+            health["services"]["redis"] = "up"
         except Exception as e:
-            health['services']['redis'] = f'down: {str(e)}'
-            health['status'] = 'unhealthy'
+            health["services"]["redis"] = f"down: {str(e)}"
+            health["status"] = "unhealthy"
 
         status_code = (
-            status.HTTP_200_OK if health['status'] == 'healthy'
+            status.HTTP_200_OK
+            if health["status"] == "healthy"
             else status.HTTP_503_SERVICE_UNAVAILABLE
         )
 
