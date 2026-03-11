@@ -4,7 +4,7 @@ from .models import Notification
 logger = logging.getLogger(__name__)
 
 
-def send_admin_notification(title, message, notification_type='system', recipient=None):
+def send_admin_notification(title, message, notification_type="system", recipient=None):
     """
     Create a Notification record in the database.
 

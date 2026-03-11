@@ -3,7 +3,8 @@ from django.dispatch import receiver
 from django.conf import settings
 from .models import Cart
 
-@receiver(post_save,sender=settings.AUTH_USER_MODEL)
-def create_user_cart(sender,instance,created,**kwargs):
+
+@receiver(post_save, sender=settings.AUTH_USER_MODEL)
+def create_user_cart(sender, instance, created, **kwargs):
     if created:
         Cart.objects.create(user=instance)

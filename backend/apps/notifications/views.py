@@ -15,25 +15,26 @@ class AdminNotificationListAPIView(APIView):
     List all notifications for admin users.
     Query params: ?is_read=false&type=new_order
     """
+
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         queryset = Notification.objects.filter(
             Q(recipient__isnull=True) | Q(recipient=request.user)
-        ).order_by('-created_at')
+        ).order_by("-created_at")
 
         # Filter by read status
-        is_read = request.query_params.get('is_read', None)
+        is_read = request.query_params.get("is_read", None)
         if is_read is not None:
-            queryset = queryset.filter(is_read=is_read.lower() == 'true')
+            queryset = queryset.filter(is_read=is_read.lower() == "true")
 
         # Filter by type
-        notif_type = request.query_params.get('type', None)
+        notif_type = request.query_params.get("type", None)
         if notif_type:
             queryset = queryset.filter(notification_type=notif_type)
 
         # Limit results
-        limit = int(request.query_params.get('limit', 50))
+        limit = int(request.query_params.get("limit", 50))
         queryset = queryset[:limit]
 
         serializer = NotificationSerializer(queryset, many=True)
@@ -45,13 +46,16 @@ class AdminNotificationMarkReadAPIView(APIView):
     PATCH /api/admin/notifications/<id>/read/
     Mark one notification as read.
     """
+
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def patch(self, request, pk):
         try:
             notification = Notification.objects.get(pk=pk)
         except Notification.DoesNotExist:
-            return Response({'error': 'Notification not found'}, status=status.HTTP_404_NOT_FOUND)
+            return Response(
+                {"error": "Notification not found"}, status=status.HTTP_404_NOT_FOUND
+            )
 
         notification.is_read = True
         notification.save()
@@ -63,15 +67,15 @@ class AdminNotificationMarkAllReadAPIView(APIView):
     PATCH /api/admin/notifications/read-all/
     Mark all notifications as read.
     """
+
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def patch(self, request):
         updated = Notification.objects.filter(
-            Q(recipient__isnull=True) | Q(recipient=request.user),
-            is_read=False
+            Q(recipient__isnull=True) | Q(recipient=request.user), is_read=False
         ).update(is_read=True)
 
-        return Response({'detail': f'{updated} notifications marked as read.'})
+        return Response({"detail": f"{updated} notifications marked as read."})
 
 
 class AdminNotificationUnreadCountAPIView(APIView):
@@ -79,12 +83,12 @@ class AdminNotificationUnreadCountAPIView(APIView):
     GET /api/admin/notifications/unread-count/
     Returns the count of unread notifications.
     """
+
     permission_classes = [IsAuthenticated, IsAdminUser]
 
     def get(self, request):
         count = Notification.objects.filter(
-            Q(recipient__isnull=True) | Q(recipient=request.user),
-            is_read=False
+            Q(recipient__isnull=True) | Q(recipient=request.user), is_read=False
         ).count()
 
-        return Response({'unread_count': count})
+        return Response({"unread_count": count})

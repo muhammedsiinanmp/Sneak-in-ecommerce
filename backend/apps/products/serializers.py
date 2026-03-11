@@ -55,17 +55,20 @@ class ProductListSerializer(serializers.ModelSerializer):
             "image",
         ]
 
-    def get_image(self,obj):
+    def get_image(self, obj):
         first_img = obj.images.first()
         return first_img.image_url if first_img else None
-    
+
+
 class ProductDetailSerializer(serializers.ModelSerializer):
     """Full detail — used for product page"""
+
     brand = BrandSerializer()
     category = CategorySerializer()
     subcategory = SubCategorySerializer()
     images = ProductImageSerializer(many=True, read_only=True)
     sizes = ProductSizeSerializer(many=True, read_only=True)
+
     class Meta:
         model = Product
-        fields = '__all__'
+        fields = "__all__"

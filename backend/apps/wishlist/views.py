@@ -3,7 +3,13 @@ from rest_framework.permissions import IsAuthenticated
 from .models import Wishlist
 from .serializers import WishlistSerializer
 
-class WishlistViewSet(mixins.CreateModelMixin, mixins.ListModelMixin, mixins.DestroyModelMixin, viewsets.GenericViewSet):
+
+class WishlistViewSet(
+    mixins.CreateModelMixin,
+    mixins.ListModelMixin,
+    mixins.DestroyModelMixin,
+    viewsets.GenericViewSet,
+):
     serializer_class = WishlistSerializer
     permission_classes = [IsAuthenticated]
 
