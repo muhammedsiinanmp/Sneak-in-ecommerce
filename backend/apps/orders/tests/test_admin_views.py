@@ -14,7 +14,7 @@ class TestAdminOrderListAPIView:
     def test_filter_by_status(self, admin_client, sample_order):
         response = admin_client.get("/api/admin/orders/?status=pending")
         assert response.status_code == status.HTTP_200_OK
-        assert all(o["status"] == "pending" for o in response.data)
+        assert all(o["status"] == "pending" for o in response.data['results'])
 
     def test_regular_user_forbidden(self, user_client):
         response = user_client.get("/api/admin/orders/")
