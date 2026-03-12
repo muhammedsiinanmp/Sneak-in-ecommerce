@@ -45,27 +45,32 @@ const AdminLayout = ({ children }) => {
         const data = await countRes.json();
         setUnreadCount(data.unread_count || 0);
       }
-    } catch (err) { /* silent */ }
+    } catch { /* silent */ }
   }, [authFetch]);
 
   useEffect(() => {
-    fetchNotifications();
+    const timer = setTimeout(() => {
+      fetchNotifications();
+    }, 0);
     const interval = setInterval(fetchNotifications, 60000);
-    return () => clearInterval(interval);
+    return () => {
+      clearTimeout(timer);
+      clearInterval(interval);
+    };
   }, [fetchNotifications]);
 
   const markAsRead = async (id) => {
     try {
       await authFetch(`${API}/admin/notifications/${id}/read/`, { method: 'PATCH' });
       fetchNotifications();
-    } catch (err) { /* silent */ }
+    } catch { /* silent */ }
   };
 
   const markAllRead = async () => {
     try {
       await authFetch(`${API}/admin/notifications/read-all/`, { method: 'PATCH' });
       fetchNotifications();
-    } catch (err) { /* silent */ }
+    } catch { /* silent */ }
   };
 
   const handleLogout = () => {
@@ -82,7 +87,7 @@ const AdminLayout = ({ children }) => {
       <aside className="hidden lg:flex lg:flex-col w-60 bg-white border-r border-gray-200 shrink-0">
         <div className="p-6 pb-4">
           <Link to="/admin/dashboard">
-            <img src="/Sneak_logo.png" className="w-36 rounded" alt="Sneak-In" />
+            <img src="/Sneak_logo.png" className="w-36" alt="Sneak-In" />
           </Link>
           <div className="flex items-center gap-2 mt-3">
             <div className="w-6 h-[2px] bg-gray-800"></div>
@@ -98,7 +103,7 @@ const AdminLayout = ({ children }) => {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-4 py-3 mb-0.5 text-sm font-medium transition-all duration-200 rounded-lg ${
+                className={`flex items-center gap-3 px-4 py-3 mb-0.5 text-sm font-medium transition-all duration-200 ${
                   isActive
                     ? 'text-white bg-gray-900 shadow-md'
                     : 'text-gray-600 hover:text-gray-900 hover:bg-gray-100'
@@ -113,7 +118,7 @@ const AdminLayout = ({ children }) => {
 
         <div className="p-4 border-t border-gray-100">
           <div className="flex items-center gap-3 px-3 py-2 mb-3">
-            <div className="w-9 h-9 bg-gray-900 rounded-full flex items-center justify-center text-white text-sm font-bold shadow-sm">
+            <div className="w-9 h-9 bg-gray-900 flex items-center justify-center text-white text-sm font-bold shadow-sm">
               {user?.name?.charAt(0)?.toUpperCase() || 'A'}
             </div>
             <div className="overflow-hidden flex-1">
@@ -123,7 +128,7 @@ const AdminLayout = ({ children }) => {
           </div>
           <button
             onClick={handleLogout}
-            className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-semibold text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
+            className="flex items-center gap-2 w-full px-4 py-2.5 text-xs font-semibold text-gray-600 border border-gray-200 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
           >
             <LogOut className="w-3.5 h-3.5" />
             Sign Out
@@ -138,9 +143,9 @@ const AdminLayout = ({ children }) => {
           <aside className="absolute left-0 top-0 bottom-0 w-72 bg-white shadow-2xl flex flex-col">
             <div className="p-6 flex justify-between items-center border-b border-gray-100">
               <Link to="/admin/dashboard" onClick={() => setSidebarOpen(false)}>
-                <img src="/Sneak_logo.png" className="w-28 rounded" alt="Logo" />
+                <img src="/Sneak_logo.png" className="w-28" alt="Logo" />
               </Link>
-              <button onClick={() => setSidebarOpen(false)} className="p-2 rounded-lg hover:bg-gray-100">
+              <button onClick={() => setSidebarOpen(false)} className="p-2 hover:bg-gray-100">
                 <X className="w-5 h-5 text-gray-600" />
               </button>
             </div>
@@ -154,7 +159,7 @@ const AdminLayout = ({ children }) => {
                     key={item.path}
                     to={item.path}
                     onClick={() => setSidebarOpen(false)}
-                    className={`flex items-center gap-3 px-4 py-3.5 text-sm font-medium transition-all rounded-lg ${
+                    className={`flex items-center gap-3 px-4 py-3.5 text-sm font-medium transition-all ${
                       isActive ? 'text-white bg-gray-900' : 'text-gray-600 hover:bg-gray-100'
                     }`}
                   >
@@ -168,7 +173,7 @@ const AdminLayout = ({ children }) => {
             <div className="p-4 border-t border-gray-100">
               <button
                 onClick={() => { handleLogout(); setSidebarOpen(false); }}
-                className="flex items-center justify-center gap-2 w-full px-4 py-3.5 text-sm font-bold text-white bg-gray-900 rounded-lg active:scale-[0.98] transition-all"
+                className="flex items-center justify-center gap-2 w-full px-4 py-3.5 text-sm font-bold text-white bg-gray-900 active:scale-[0.98] transition-all"
               >
                 <LogOut className="w-4 h-4" />
                 Sign Out
@@ -185,7 +190,7 @@ const AdminLayout = ({ children }) => {
           <div className="flex items-center gap-3">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+              className="lg:hidden p-2 hover:bg-gray-100 transition-colors"
             >
               <Menu className="w-5 h-5 text-gray-700" />
             </button>
@@ -202,18 +207,18 @@ const AdminLayout = ({ children }) => {
             <div className="relative">
               <button
                 onClick={() => setNotifOpen(!notifOpen)}
-                className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
+                className="relative p-2 hover:bg-gray-100 transition-colors"
               >
                 <Bell className="w-5 h-5 text-gray-600" />
                 {unreadCount > 0 && (
-                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold rounded-full flex items-center justify-center">
+                  <span className="absolute top-1 right-1 w-4 h-4 bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
                     {unreadCount > 9 ? '9+' : unreadCount}
                   </span>
                 )}
               </button>
 
               {notifOpen && (
-                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 rounded-xl shadow-2xl z-50 overflow-hidden">
+                <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white border border-gray-200 shadow-2xl z-50 overflow-hidden">
                   <div className="px-4 py-3 border-b border-gray-100 flex justify-between items-center">
                     <p className="text-sm font-semibold text-gray-800">Notifications</p>
                     {unreadCount > 0 && (
@@ -236,7 +241,7 @@ const AdminLayout = ({ children }) => {
                           </span>
                         </div>
                         <p className="text-xs text-gray-500 mt-1 line-clamp-2">{n.message}</p>
-                        {!n.is_read && <div className="w-2 h-2 rounded-full bg-blue-500 mt-2"></div>}
+                        {!n.is_read && <div className="w-2 h-2 bg-blue-500 mt-2"></div>}
                       </div>
                     ))}
                     {(!notifications || notifications.length === 0) && (
@@ -253,7 +258,7 @@ const AdminLayout = ({ children }) => {
             {/* View Store */}
             <Link
               to="/"
-              className="hidden sm:flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-200 rounded-lg hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
+              className="hidden sm:flex items-center gap-1.5 px-4 py-2 text-xs font-semibold text-gray-700 border border-gray-200 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all duration-200"
             >
               <Store className="w-3.5 h-3.5" />
               View Store

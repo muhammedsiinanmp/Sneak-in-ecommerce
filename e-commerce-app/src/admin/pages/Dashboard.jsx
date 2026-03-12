@@ -28,7 +28,7 @@ const Dashboard = () => {
       setLoading(false);
     };
     fetchAll();
-  }, []);
+  }, [authFetch]);
 
   const updateOrderStatus = async (id, status) => {
     try {
@@ -48,7 +48,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32">
-        <div className="animate-spin w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full mb-4"></div>
+        <div className="animate-spin w-8 h-8 border-2 border-gray-900 border-t-transparent mb-4"></div>
         <p className="text-sm text-gray-400">Loading dashboard...</p>
       </div>
     );
@@ -94,7 +94,7 @@ const Dashboard = () => {
           <h2 className="text-2xl font-bold text-gray-900">Dashboard</h2>
           <p className="text-sm text-gray-500 mt-1">Welcome back, here's what's happening today.</p>
         </div>
-        <Link to="/admin/orders" className="text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 px-4 py-2 rounded-lg hover:bg-gray-50 transition-colors">
+        <Link to="/admin/orders" className="text-sm font-medium text-gray-600 hover:text-gray-900 border border-gray-200 px-4 py-2 hover:bg-gray-50 transition-colors">
           View All Orders →
         </Link>
       </div>
@@ -102,9 +102,9 @@ const Dashboard = () => {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {kpis.map((kpi, i) => (
-          <div key={i} className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-md transition-shadow">
+          <div key={i} className="bg-white border border-gray-200 p-5 hover:shadow-md transition-shadow">
             <div className="flex items-center gap-3 mb-3">
-              <div className={`w-2 h-2 rounded-full ${kpi.color}`}></div>
+              <div className={`w-2 h-2 ${kpi.color}`}></div>
               <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">{kpi.label}</p>
             </div>
             <p className="text-2xl font-bold text-gray-900">{kpi.value}</p>
@@ -115,7 +115,7 @@ const Dashboard = () => {
       {/* Status Quick Stats */}
       <div className="grid grid-cols-3 gap-4">
         {statusCards.map((s, i) => (
-          <div key={i} className={`rounded-xl px-5 py-4 ${s.color}`}>
+          <div key={i} className={`px-5 py-4 ${s.color}`}>
             <p className="text-2xl font-bold">{s.value}</p>
             <p className="text-xs font-medium opacity-80 mt-1">{s.label}</p>
           </div>
@@ -125,7 +125,7 @@ const Dashboard = () => {
       {/* Main Grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Recent Orders — 2/3 */}
-        <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="lg:col-span-2 bg-white border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
             <h3 className="text-sm font-semibold text-gray-800">Recent Orders</h3>
             <Link to="/admin/orders" className="text-xs text-gray-500 hover:text-gray-800 font-medium">
@@ -137,7 +137,7 @@ const Dashboard = () => {
               <div key={order.id} className="px-5 py-3.5 hover:bg-gray-50/50 transition-colors">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-600 shrink-0">
+                    <div className="w-8 h-8 bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-600 shrink-0">
                       {order.user_name?.charAt(0)?.toUpperCase() || '#'}
                     </div>
                     <div className="min-w-0 flex-1">
@@ -146,7 +146,7 @@ const Dashboard = () => {
                     </div>
                   </div>
                   <div className="flex items-center gap-3 ml-3">
-                    <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 ${statusColors[order.status] || 'bg-gray-100 text-gray-600'}`}>
                       {order.status}
                     </span>
                     <p className="text-sm font-semibold text-gray-900 w-20 text-right">₹{Number(order.total_amount).toLocaleString()}</p>
@@ -157,7 +157,7 @@ const Dashboard = () => {
                   <div className="flex gap-1.5 mt-2 ml-11">
                     {['confirmed', 'shipped', 'delivered'].filter(s => s !== order.status).map(s => (
                       <button key={s} onClick={() => updateOrderStatus(order.id, s)}
-                        className="px-2.5 py-1 text-[10px] font-medium rounded-md border border-gray-200 text-gray-500 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all capitalize">
+                        className="px-2.5 py-1 text-[10px] font-medium border border-gray-200 text-gray-500 hover:bg-gray-900 hover:text-white hover:border-gray-900 transition-all capitalize">
                         → {s}
                       </button>
                     ))}
@@ -171,7 +171,7 @@ const Dashboard = () => {
         </div>
 
         {/* Top Products — 1/3 */}
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100">
             <h3 className="text-sm font-semibold text-gray-800">Top Selling Products</h3>
           </div>
@@ -179,7 +179,7 @@ const Dashboard = () => {
             {topProducts.length > 0 ? topProducts.map((p, i) => (
               <div key={i} className="px-5 py-3.5 flex items-center justify-between hover:bg-gray-50/50 transition-colors">
                 <div className="flex items-center gap-3 min-w-0 flex-1">
-                  <span className="w-6 h-6 rounded-full bg-gray-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
+                  <span className="w-6 h-6 bg-gray-900 text-white flex items-center justify-center text-[10px] font-bold shrink-0">
                     {i + 1}
                   </span>
                   <p className="text-sm text-gray-700 font-medium truncate">{p.product_name}</p>
@@ -195,10 +195,10 @@ const Dashboard = () => {
 
       {/* Low Stock / Out of Stock Products */}
       {lowStockProducts.length > 0 && (
-        <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+        <div className="bg-white border border-gray-200 overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse"></div>
+              <div className="w-2 h-2 bg-red-500 animate-pulse"></div>
               <h3 className="text-sm font-semibold text-gray-800">Low Stock & Out of Stock ({lowStockProducts.length})</h3>
             </div>
             <Link to="/admin/products" className="text-xs text-gray-500 hover:text-gray-800 font-medium">
@@ -220,7 +220,7 @@ const Dashboard = () => {
                   <tr key={p.id} className="hover:bg-gray-50/50">
                     <td className="px-5 py-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-lg bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
+                        <div className="w-10 h-10 bg-gray-100 overflow-hidden shrink-0 border border-gray-200">
                           <img src={p.images?.[0]?.image_url || 'https://via.placeholder.com/80'} alt="" className="w-full h-full object-cover" />
                         </div>
                         <div className="min-w-0">
@@ -234,7 +234,7 @@ const Dashboard = () => {
                       <span className="text-sm font-bold text-gray-900">{p.stock}</span>
                     </td>
                     <td className="px-5 py-3">
-                      <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full ${
+                      <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 ${
                         p.stock === 0 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'
                       }`}>
                         {p.stock === 0 ? 'Out of Stock' : 'Low Stock'}

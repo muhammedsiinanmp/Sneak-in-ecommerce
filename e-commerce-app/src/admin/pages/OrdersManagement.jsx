@@ -1,5 +1,6 @@
-import React, { useEffect, useState, useContext } from "react";
+import React, { useEffect, useState, useContext, useCallback } from "react";
 import { ShopContext } from "../../context/ShopContext";
+import { toast } from "react-toastify";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
@@ -11,9 +12,10 @@ const AdminOrders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => { load(); }, [statusFilter]);
+  // Modal State
+  const [confirmModal, setConfirmModal] = useState({ show: false, id: null, status: "" });
 
-  const load = async () => {
+  const load = useCallback(async () => {
     setLoading(true);
     try {
       const qs = statusFilter !== "all" ? `&status=${statusFilter}` : "";
@@ -24,20 +26,33 @@ const AdminOrders = () => {
       }
     } catch (err) { console.error(err); }
     setLoading(false);
-  };
+  }, [statusFilter, authFetch]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
 
   const updateStatus = async (id, status) => {
-    if (!window.confirm(`Change order #${id} status to "${status}"?`)) return;
     try {
       const res = await authFetch(`${API}/admin/orders/${id}/`, {
         method: "PATCH", body: JSON.stringify({ status })
       });
+
+      const data = await res.json();
+
       if (res?.ok) {
-        const updated = await res.json();
-        setOrders(prev => prev.map(o => o.id === id ? updated : o));
-        if (selectedOrder?.id === id) setSelectedOrder(updated);
+        setOrders(prev => prev.map(o => o.id === id ? data : o));
+        if (selectedOrder?.id === id) setSelectedOrder(data);
+        toast.success(`Order #${id} updated to ${status}`);
+      } else {
+        toast.error(data.error || "Failed to update status");
       }
-    } catch (err) { console.error(err); alert("Failed to update"); }
+    } catch (err) {
+      console.error(err);
+      toast.error("An unexpected error occurred");
+    } finally {
+      setConfirmModal({ show: false, id: null, status: "" });
+    }
   };
 
   const filtered = orders.filter(o => {
@@ -58,7 +73,7 @@ const AdminOrders = () => {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center py-32">
-        <div className="animate-spin w-8 h-8 border-2 border-gray-900 border-t-transparent rounded-full mb-4"></div>
+        <div className="animate-spin w-8 h-8 border-2 border-gray-900 border-t-transparent mb-4"></div>
         <p className="text-sm text-gray-400">Loading orders...</p>
       </div>
     );
@@ -76,10 +91,10 @@ const AdminOrders = () => {
           <div className="relative">
             <svg className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path></svg>
             <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by ID or customer..."
-              className="w-full sm:w-64 border border-gray-200 rounded-lg px-4 py-2.5 pl-10 text-sm focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all" />
+              className="w-full sm:w-64 border border-gray-200 px-4 py-2.5 pl-10 text-sm focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-200 transition-all" />
           </div>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}
-            className="border border-gray-200 rounded-lg px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-200 appearance-none cursor-pointer">
+            className="border border-gray-200 px-4 py-2.5 text-sm focus:border-gray-400 focus:outline-none focus:ring-1 focus:ring-gray-200 appearance-none cursor-pointer">
             <option value="all">All Statuses</option>
             {statusBtns.map(s => <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>)}
           </select>
@@ -87,7 +102,7 @@ const AdminOrders = () => {
       </div>
 
       {/* Orders Table */}
-      <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+      <div className="bg-white border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
             <thead>
@@ -111,27 +126,34 @@ const AdminOrders = () => {
                   </td>
                   <td className="px-5 py-3.5 text-sm font-bold text-gray-900">₹{Number(o.total_amount)?.toLocaleString()}</td>
                   <td className="px-5 py-3.5">
-                    <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full ${statusColors[o.status] || 'bg-gray-100 text-gray-600'}`}>
+                    <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 ${statusColors[o.status] || 'bg-gray-100 text-gray-600'}`}>
                       {o.status || 'pending'}
                     </span>
                   </td>
                   <td className="px-5 py-3.5 text-right">
                       <div className="flex items-center justify-end gap-2 flex-wrap">
                         {/* Quick status buttons — only if order can still be updated */}
-                        {o.status !== 'delivered' && o.status !== 'cancelled' && (
+                        {o.status !== 'delivered' && o.status !== 'cancelled' ? (
                           <select
                             defaultValue=""
-                            onChange={(e) => { if (e.target.value) updateStatus(o.id, e.target.value); e.target.value = ""; }}
-                            className="text-xs border border-gray-200 rounded-lg px-2 py-1.5 text-gray-500 focus:outline-none focus:border-gray-400 cursor-pointer appearance-none bg-white hover:border-gray-400 transition-colors"
+                            onChange={(e) => {
+                              if (e.target.value) {
+                                setConfirmModal({ show: true, id: o.id, status: e.target.value });
+                              }
+                              e.target.value = "";
+                            }}
+                            className="text-xs border border-gray-200 px-2 py-1.5 text-gray-500 focus:outline-none focus:border-gray-400 cursor-pointer appearance-none bg-white hover:border-gray-400 transition-colors"
                           >
                             <option value="" disabled>Move to →</option>
                             {statusBtns.filter(s => s !== o.status).map(s => (
                               <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
                             ))}
                           </select>
+                        ) : (
+                          <span className="text-[10px] text-gray-400 font-medium px-2 py-1 bg-gray-50 border border-gray-100 italic">Final State</span>
                         )}
                         <button onClick={() => setSelectedOrder(o)}
-                          className="px-3 py-1.5 text-xs font-medium text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-100 transition-colors">
+                          className="px-3 py-1.5 text-xs font-medium text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors">
                           Details
                         </button>
                       </div>
@@ -146,23 +168,55 @@ const AdminOrders = () => {
         </div>
       </div>
 
+      {/* Confirmation Modal */}
+      {confirmModal.show && (
+        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/40 backdrop-blur-sm transition-opacity" onClick={() => setConfirmModal({ show: false, id: null, status: "" })} />
+          <div className="relative bg-white w-full max-w-sm shadow-2xl z-20 p-6 scale-in-center overflow-hidden">
+            <div className="flex items-center gap-4 mb-5">
+              <div className="w-12 h-12 bg-amber-50 flex items-center justify-center shrink-0">
+                <svg className="w-6 h-6 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+              </div>
+              <div>
+                <h4 className="text-lg font-bold text-gray-900">Change Status?</h4>
+                <p className="text-sm text-gray-500">Update order #{confirmModal.id} to <span className="font-bold text-gray-800 capitalize">{confirmModal.status}</span>?</p>
+              </div>
+            </div>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setConfirmModal({ show: false, id: null, status: "" })}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-gray-600 bg-gray-100 hover:bg-gray-200 transition-all font-inter"
+              >
+                No, Cancel
+              </button>
+              <button
+                onClick={() => updateStatus(confirmModal.id, confirmModal.status)}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold text-white bg-black hover:bg-gray-800 transition-all shadow-lg active:scale-95 font-inter"
+              >
+                Yes, Change
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Order Detail Modal */}
       {selectedOrder && (
         <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/30" onClick={() => setSelectedOrder(null)} />
-          <div className="relative bg-white w-full max-w-3xl rounded-2xl shadow-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden">
+          <div className="relative bg-white w-full max-w-3xl shadow-2xl z-10 max-h-[90vh] flex flex-col overflow-hidden">
             {/* Header */}
             <div className="px-6 py-5 border-b border-gray-100 flex justify-between items-start">
               <div>
                 <div className="flex items-center gap-2 mb-1">
                   <h4 className="text-xl font-bold text-gray-900">Order #{selectedOrder.id}</h4>
-                  <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 rounded-full ${statusColors[selectedOrder.status] || 'bg-gray-100 text-gray-600'}`}>
+                  <span className={`text-[10px] font-semibold uppercase px-2.5 py-1 ${statusColors[selectedOrder.status] || 'bg-gray-100 text-gray-600'}`}>
                     {selectedOrder.status}
                   </span>
                 </div>
                 <p className="text-xs text-gray-400">{new Date(selectedOrder.created_at).toLocaleString()}</p>
               </div>
-              <button onClick={() => setSelectedOrder(null)} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-gray-800">
+              <button onClick={() => setSelectedOrder(null)} className="p-2 hover:bg-gray-100 text-gray-400 hover:text-gray-800">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"></path></svg>
               </button>
             </div>
@@ -171,12 +225,12 @@ const AdminOrders = () => {
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
               {/* Customer & Shipping */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="bg-gray-50 rounded-xl p-4">
+                <div className="bg-gray-50 p-4">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Customer</p>
                   <p className="text-sm font-bold text-gray-800">{selectedOrder.user_name || 'Guest'}</p>
                   <p className="text-xs text-gray-500 mt-1">{selectedOrder.user_email}</p>
                 </div>
-                <div className="bg-gray-50 rounded-xl p-4">
+                <div className="bg-gray-50 p-4">
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">Shipping</p>
                   {selectedOrder.shipping_address ? (
                     <div className="text-sm text-gray-700 space-y-0.5">
@@ -192,8 +246,8 @@ const AdminOrders = () => {
                 <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Items</p>
                 <div className="space-y-2">
                   {(selectedOrder.items || []).map((item, idx) => (
-                    <div key={idx} className={`flex gap-4 p-3 bg-gray-50 rounded-lg ${item.cancelled ? 'opacity-40' : ''}`}>
-                      <div className="w-14 h-14 bg-white rounded-lg overflow-hidden shrink-0 border border-gray-200">
+                    <div key={idx} className={`flex gap-4 p-3 bg-gray-50 ${item.cancelled ? 'opacity-40' : ''}`}>
+                      <div className="w-14 h-14 bg-white overflow-hidden shrink-0 border border-gray-200">
                         <img src={item.product_image || "https://via.placeholder.com/100"} alt="" className="w-full h-full object-cover" />
                       </div>
                       <div className="flex-1 min-w-0">
@@ -212,7 +266,7 @@ const AdminOrders = () => {
               </div>
 
               {/* Total */}
-              <div className="flex justify-between items-center bg-gray-900 text-white rounded-xl px-6 py-5">
+              <div className="flex justify-between items-center bg-gray-900 text-white px-6 py-5">
                 <div>
                   <p className="text-xs text-gray-400">Total Amount</p>
                   <p className="text-xs text-gray-500 mt-0.5">{selectedOrder.payment_method || "Cash on Delivery"}</p>
@@ -226,12 +280,12 @@ const AdminOrders = () => {
                 <div className="flex flex-wrap gap-2">
                   {statusBtns.map(st => {
                     const isCurrent = selectedOrder.status === st;
-                    const isLocked = selectedOrder.status === "cancelled";
+                    const isLocked = selectedOrder.status === "delivered" || selectedOrder.status === "cancelled";
                     return (
                       <button key={st}
                         disabled={isCurrent || isLocked}
-                        onClick={() => updateStatus(selectedOrder.id, st)}
-                        className={`px-4 py-2 text-xs font-semibold rounded-lg border transition-all ${
+                        onClick={() => setConfirmModal({ show: true, id: selectedOrder.id, status: st })}
+                        className={`px-4 py-2 text-xs font-semibold border transition-all ${
                           isCurrent
                             ? 'bg-gray-200 text-gray-400 border-gray-200 cursor-default'
                             : isLocked
@@ -244,8 +298,10 @@ const AdminOrders = () => {
                     );
                   })}
                 </div>
-                {selectedOrder.status === "cancelled" && (
-                  <p className="text-xs text-red-500 mt-3 p-3 bg-red-50 rounded-lg">This order is cancelled. No further status changes allowed.</p>
+                {(selectedOrder.status === "cancelled" || selectedOrder.status === "delivered") && (
+                  <p className="text-xs text-amber-600 mt-3 p-3 bg-amber-50 border border-amber-100">
+                    Order state is now <strong>{selectedOrder.status}</strong>. Historical records for terminal states cannot be changed.
+                  </p>
                 )}
               </div>
             </div>
@@ -253,7 +309,7 @@ const AdminOrders = () => {
             {/* Footer */}
             <div className="px-6 py-4 border-t border-gray-100 flex justify-end">
               <button onClick={() => setSelectedOrder(null)}
-                className="px-6 py-2.5 text-sm font-medium text-gray-600 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
+                className="px-6 py-2.5 text-sm font-medium text-gray-600 border border-gray-200 hover:bg-gray-50 transition-colors">
                 Close
               </button>
             </div>

@@ -77,6 +77,12 @@ class AdminOrderDetailAPIView(APIView):
                 {"error": "Order not found"}, status=status.HTTP_404_NOT_FOUND
             )
 
+        if order.status in ["delivered", "cancelled"]:
+            return Response(
+                {"error": f"Cannot change status of a {order.status} order."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         new_status = request.data.get("status")
         if new_status not in [
             "pending",

@@ -83,8 +83,9 @@ def generate_daily_sales_report():
             message=report,
             from_email=settings.DEFAULT_FROM_EMAIL,
             recipient_list=admin_emails,
-            fail_silently=True,
+            fail_silently=False,
         )
+        logger.info(f"Daily sales report email sent to: {', '.join(admin_emails)}")
 
     logger.info(f"Daily sales report generated for {yesterday}")
     return f"Report generated for {yesterday}. Revenue: ₹{total_revenue}"
