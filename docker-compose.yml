@@ -2,23 +2,19 @@ services:
   db:
     image: postgres:16-alpine
     environment:
-      POSTGRES_DB: sneakin_db
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
+      POSTGRES_DB: ${DB_NAME:-sneakin_db}
+      POSTGRES_USER: ${DB_USER:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-postgres}
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-postgres}"]
       interval: 5s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
-    ports:
-      - "6379:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
@@ -28,90 +24,56 @@ services:
   backend:
     build: ./backend
     command: gunicorn config.wsgi:application --config gunicorn.conf.py
+    env_file:
+      - .env
     volumes:
-      - ./backend:/app
       - static_volume:/app/staticfiles
       - media_volume:/app/media
-    ports:
-      - "8000:8000"
+    expose:
+      - "8000"
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.dev
-      - DB_HOST=db
-      - DB_NAME=sneakin_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - SECRET_KEY=dev-secret-key-change-in-prod
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - REDIS_HOST=redis
+    restart: unless-stopped
 
   celery_worker:
     build: ./backend
     command: celery -A config worker --loglevel=info
-    volumes:
-      - ./backend:/app
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.dev
-      - DB_HOST=db
-      - DB_NAME=sneakin_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - SECRET_KEY=dev-secret-key-change-in-prod
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - REDIS_HOST=redis
+    restart: unless-stopped
 
   celery_beat:
     build: ./backend
     command: celery -A config beat --loglevel=info --scheduler django_celery_beat.schedulers:DatabaseScheduler
-    volumes:
-      - ./backend:/app
+    env_file:
+      - .env
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.dev
-      - DB_HOST=db
-      - DB_NAME=sneakin_db
-      - DB_USER=postgres
-      - DB_PASSWORD=postgres
-      - SECRET_KEY=dev-secret-key-change-in-prod
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - REDIS_HOST=redis
+    restart: unless-stopped
 
   flower:
     build: ./backend
     command: celery -A config flower --port=5555
-    volumes:
-      - ./backend:/app
-    ports:
-      - "5555:5555"
+    env_file:
+      - .env
     depends_on:
       - redis
       - celery_worker
-    environment:
-      - DJANGO_SETTINGS_MODULE=config.settings.dev
-      - CELERY_BROKER_URL=redis://redis:6379/1
-      - CELERY_RESULT_BACKEND=redis://redis:6379/2
-      - SECRET_KEY=dev-secret-key-change-in-prod
+    restart: unless-stopped
 
   nginx:
     build: ./nginx
-    ports:
-      - "80:80"
     volumes:
       - static_volume:/app/staticfiles
       - media_volume:/app/media

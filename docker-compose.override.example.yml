@@ -1,0 +1,35 @@
+# DEV OVERRIDES — auto-loaded by `docker compose up`
+# This file is gitignored. Each developer creates their own copy.
+# Template: copy from docker-compose.override.example.yml
+services:
+  db:
+    ports:
+      - "5432:5432"        # Expose DB for pgAdmin, DBeaver, etc.
+
+  redis:
+    ports:
+      - "6379:6379"        # Expose Redis for local debugging
+
+  backend:
+    volumes:
+      - ./backend:/app     # Live code reload (changes on Mac → instant in container)
+    ports:
+      - "8000:8000"        # Direct backend access: http://localhost:8000
+
+  celery_worker:
+    volumes:
+      - ./backend:/app     # Live code reload for Celery tasks too
+
+  celery_beat:
+    volumes:
+      - ./backend:/app
+
+  flower:
+    volumes:
+      - ./backend:/app
+    ports:
+      - "5555:5555"        # Flower UI: http://localhost:5555
+
+  nginx:
+    ports:
+      - "80:80"            # Nginx: http://localhost

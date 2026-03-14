@@ -1,0 +1,51 @@
+# PRODUCTION OVERRIDES — used on EC2 with explicit -f flags
+services:
+  backend:
+    env_file:
+      - .env.prod          # Override .env with production values
+    # No bind mount — code is baked into the Docker image
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  celery_worker:
+    env_file:
+      - .env.prod
+    command: celery -A config worker --loglevel=info --concurrency=2 --max-memory-per-child=150000
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  celery_beat:
+    env_file:
+      - .env.prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  flower:
+    env_file:
+      - .env.prod
+    command: celery -A config flower --port=5555 --basic_auth=${FLOWER_USER:-admin}:${FLOWER_PASSWORD:-changeme}
+    ports:
+      - "127.0.0.1:5555:5555"   # Bind to localhost ONLY — accessible via SSH tunnel
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  nginx:
+    ports:
+      - "8080:80"          # Host Nginx (port 443) proxies to here
+
+  redis:
+    command: redis-server --requirepass ${REDIS_PASSWORD:-changeme}
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "${REDIS_PASSWORD:-changeme}", "ping"]

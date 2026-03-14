@@ -1,0 +1,13 @@
+-r base.txt
+
+# ── Testing ──
+pytest==8.3.4
+pytest-django==4.9.0
+pytest-cov==6.1.1
+coverage==7.13.4
+factory-boy==3.3.1
+Faker==40.8.0
+
+# ── Linting & Formatting ──
+flake8==7.1.1
+black==25.1.0

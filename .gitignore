@@ -33,6 +33,8 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 # ─── Environment Variables ─────────────────────
+.env.prod
+.env.local
 .env
 .coverage
 htmlcov/

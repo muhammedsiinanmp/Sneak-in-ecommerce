@@ -1,259 +1,220 @@
 <div align="center">
-# 👟 SneakIn — E-Commerce Platform
-**A modern full-stack e-commerce application for sneaker enthusiasts**
-![Python](https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white)
-![Django](https://img.shields.io/badge/Django-6.0-092E20?logo=django&logoColor=white)
-![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
-![Vite](https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white)
-![TailwindCSS](https://img.shields.io/badge/Tailwind-4-06B6D4?logo=tailwindcss&logoColor=white)
-![Docker](https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white)
-![License](https://img.shields.io/badge/License-MIT-green)
+  <img src="e-commerce-app/src/assets/Sneak_logo.png" alt="SneakIn Logo" width="120" />
+  <h1>👟 SneakIn — Premium E-Commerce Platform</h1>
+  <p><b>A high-performance, enterprise-ready sneaker marketplace built with Django 5 and React 19.</b></p>
+
+  <p>
+    <img src="https://img.shields.io/badge/Python-3.12-3776AB?logo=python&logoColor=white" alt="Python" />
+    <img src="https://img.shields.io/badge/Django-5.1.6-092E20?logo=django&logoColor=white" alt="Django" />
+    <img src="https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black" alt="React" />
+    <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" alt="Vite" />
+    <img src="https://img.shields.io/badge/TailwindCSS-4-06B6D4?logo=tailwindcss&logoColor=white" alt="Tailwind" />
+    <img src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white" alt="Postgres" />
+    <img src="https://img.shields.io/badge/Redis-7-DC382D?logo=redis&logoColor=white" alt="Redis" />
+    <img src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white" alt="Docker" />
+    <img src="https://img.shields.io/badge/License-MIT-green" alt="License" />
+  </p>
 </div>
+
 ---
-## 📋 Table of Contents
-- [About](#about)
-- [Features](#features)
-- [Tech Stack](#tech-stack)
-- [Project Structure](#project-structure)
-- [Prerequisites](#prerequisites)
-- [Getting Started](#getting-started)
-- [Environment Variables](#environment-variables)
-- [API Overview](#api-overview)
-- [Screenshots](#screenshots)
-- [License](#license)
+
+## 📖 Introduction
+
+**SneakIn** is a sophisticated full-stack e-commerce solution designed precisely for the sneaker industry. It features a sleek, high-conversion storefront for customers and a high-efficiency dashboard for administrators. The system is built on a decoupled architecture, ensuring scalability, security, and exceptional performance.
+
+### ✨ Key Value Propositions
+- **Architectural Excellence**: Clean separation between React frontend and Django REST backend.
+- **Asynchronous Scalability**: Background processing via Celery for heavy tasks and reporting.
+- **Production Ready**: Full Docker orchestration, security hardening, and CI/CD validation.
+- **Admin Precision**: A dedicated admin module with a strict 90-degree "sharp" UI for administrative focus.
+
 ---
-## About
-SneakIn is a feature-rich e-commerce platform built with a Django REST Framework backend and a React + Vite frontend. It includes a customer-facing storefront with product browsing, cart management, and order placement, as well as a full admin dashboard for managing products, orders, and users.
+
+## 🛠️ Technology Stack
+
+### **Backend (The Engine)**
+- **Framework**: [Django 5.1.6](https://www.djangoproject.com/) for a robust, batteries-included core.
+- **API Layer**: [Django REST Framework](https://www.django-rest-framework.org/) for clean, paginated, and filtered JSON endpoints.
+- **Auth**: [SimpleJWT](https://django-rest-framework-simplejwt.readthedocs.io/) for high-security stateless token authentication.
+- **Async Workers**: [Celery](https://docs.celeryq.dev/) with [Redis](https://redis.io/) for reporting and background signals.
+- **Monitoring**: [Sentry](https://sentry.io/) for error tracking and [Prometheus](https://prometheus.io/) for metrics.
+- **Documentation**: [drf-spectacular](https://drf-spectacular.readthedocs.io/) providing interactive Swagger & Redoc.
+
+### **Frontend (The Experience)**
+- **Core**: [React 19](https://react.dev/) using modern Hooks and Context API for global state.
+- **Build Engine**: [Vite 7](https://vitejs.dev/) for lightning-fast development and optimized bundles.
+- **Styling**: [TailwindCSS 4](https://tailwindcss.com/) for a precise, utility-first design system.
+- **Navigation**: [React Router 7](https://reactrouter.com/) for declarative client-side routing.
+- **Charts**: [Chart.js](https://www.chartjs.org/) for data visualization on the Admin Dashboard.
+- **UI Notifications**: [React Toastify](https://fkhadra.github.io/react-toastify/) for real-time user feedback.
+
 ---
-## Features
-### 🛍️ Customer Features
-- **Product Browsing** — Browse collections with search, filter, and sort
-- **Product Details** — Detailed product pages with related product suggestions
-- **Shopping Cart** — Add/remove items, view cart totals
-- **Order Placement** — Complete checkout with delivery information
-- **Order Tracking** — View order history and status
-- **User Authentication** — Register, login, and profile management
-- **Responsive Design** — Fully responsive across all devices
-### 🔧 Admin Dashboard
-- **Dashboard Overview** — Sales analytics with interactive charts
-- **Product Management** — CRUD operations for products
-- **Order Management** — View and update order statuses
-- **User Management** — Monitor and manage user accounts
-- **Protected Routes** — Admin-only access with role-based auth
----
-## Tech Stack
-### Backend
-| Technology | Purpose |
-|---|---|
-| Django 6.0 | Web framework |
-| Django REST Framework | API layer |
-| SimpleJWT | JWT authentication |
-| PostgreSQL | Primary database |
-| Redis | Caching |
-| Docker | Containerization |
-| Gunicorn | WSGI server (production) |
-### Frontend
-| Technology | Purpose |
-|---|---|
-| React 19 | UI library |
-| Vite 7 | Build tool & dev server |
-| TailwindCSS 4 | Utility-first CSS |
-| React Router 7 | Client-side routing |
-| Axios | HTTP client |
-| Formik + Yup | Form handling & validation |
-| Chart.js / Recharts | Admin dashboard charts |
-| React Toastify | Toast notifications |
----
-## Project Structure
+
+## 🏗️ System Architecture
+
+```mermaid
+graph TD
+    User((User)) -->|HTTPS| Frontend[React SPA / Vite]
+    Admin((Admin)) -->|HTTPS| Frontend
+    
+    subgraph "Reverse Proxy"
+        Nginx[Nginx]
+    end
+    
+    Frontend --> Nginx
+    Nginx -->|Route /api| Backend[Django API / Gunicorn]
+    Nginx -->|Serve Static| Storage[(Static & Media Files)]
+    
+    subgraph "Persistent Storage"
+        DB[(PostgreSQL 16)]
+    end
+    
+    subgraph "Cache & Message Broker"
+        Redis[(Redis 7)]
+    end
+    
+    Backend --> DB
+    Backend --> Redis
+    
+    subgraph "Async Processing"
+        Worker[Celery Worker]
+        Beat[Celery Beat]
+        Flower[Celery Monitoring]
+    end
+    
+    Worker --> Redis
+    Worker --> DB
+    Beat --> Redis
+    Flower --> Redis
 ```
-E-Commerce App/
-├── backend/                    # Django Backend
+
+---
+
+## 📂 Project Structure
+
+```text
+.
+├── backend/                    # 🐍 Django Backend Project
 │   ├── apps/
-│   │   └── accounts/           # User accounts app
-│   ├── config/
-│   │   ├── settings/
-│   │   │   ├── base.py         # Shared settings
-│   │   │   ├── dev.py          # Development settings
-│   │   │   └── prod.py         # Production settings
-│   │   ├── urls.py
-│   │   ├── wsgi.py
-│   │   └── asgi.py
-│   ├── Dockerfile
-│   ├── manage.py
-│   └── requirements.txt
+│   │   ├── accounts/           # Auth, User Roles, Health Checks
+│   │   ├── products/           # Inventory, Brands, Categories
+│   │   ├── orders/             # Checkout, Status management, Reports
+│   │   ├── cart/               # Persistent cart management
+│   │   ├── wishlist/           # User favorites
+│   │   └── notifications/      # Real-time Admin alerts
+│   ├── config/                 # Core settings (base/dev/prod), URLs, WSGI/ASGI
+│   ├── requirements.txt        # Backend dependencies
+│   └── Dockerfile              # Production image definition
 │
-├── e-commerce-app/             # React Frontend
+├── e-commerce-app/             # ⚛️ React Frontend Project
 │   ├── src/
-│   │   ├── admin/              # Admin module
-│   │   │   ├── pages/
-│   │   │   │   ├── Dashboard.jsx
-│   │   │   │   ├── ProductsManagement.jsx
-│   │   │   │   ├── OrdersManagement.jsx
-│   │   │   │   └── UsersManagement.jsx
-│   │   │   ├── AdminLayout.jsx
-│   │   │   ├── AdminProtected.jsx
-│   │   │   └── AdminRoutes.jsx
-│   │   ├── components/         # Reusable components
-│   │   │   ├── Navbar.jsx
-│   │   │   ├── Hero.jsx
-│   │   │   ├── Footer.jsx
-│   │   │   ├── ProductItem.jsx
-│   │   │   └── ... (9 more)
-│   │   ├── context/            # React Context providers
-│   │   │   ├── AuthContext.jsx
-│   │   │   └── ShopContext.jsx
-│   │   ├── pages/              # Page components
-│   │   │   ├── Home.jsx
-│   │   │   ├── Collection.jsx
-│   │   │   ├── Product.jsx
-│   │   │   ├── Cart.jsx
-│   │   │   ├── Orders.jsx
-│   │   │   └── ... (5 more)
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   └── vite.config.js
+│   │   ├── admin/              # Specialized Admin Dashboard module
+│   │   ├── components/         # Reusable UI components
+│   │   ├── context/            # Auth and Global State providers
+│   │   ├── pages/              # Storefront pages
+│   │   └── assets/             # Images, Global styles
+│   ├── package.json            # Frontend dependencies
+│   └── vite.config.js          # Build & Plugin configuration
 │
-├── docker-compose.yml          # Docker orchestration
-├── .env.example                # Environment template
-├── .gitignore
-├── .editorconfig
-├── LICENSE
-└── README.md
+├── docker-compose.yml          # 🐳 Multi-service orchestration
+├── lint.sh                     # 🛡️ Local CI validation script
+└── .env.example                # ⚙️ Environment variable template
 ```
+
 ---
-## Prerequisites
-- **Python** 3.12+
-- **Node.js** 18+
-- **PostgreSQL** 16+
-- **Redis** 7+
-- **Docker & Docker Compose** (optional, for containerized setup)
+
+## 🚀 Features Deep Dive
+
+### **🛒 Customer Storefront**
+- **Intuitive Browsing**: Search, search filters by category/subcategory/brand, and intelligent sorting.
+- **Deep Wishlist**: authenticated users can save favorites across sessions.
+- **Dynamic Cart**: Persistent cart management with real-time stock validation and quantity updates.
+- **Secure Checkout**: Streamlined order placement with snapshot-based order data (prices locked at purchase).
+- **Order Tracking**: Comprehensive order history with real-time status updates from the warehouse.
+
+### **🛡️ Admin Dashboard (The Nerve Center)**
+- **Sales Intelligence**: Real-time sales charts and revenue summaries.
+- **Inventory Control**: Full CRUD management of products, images, and sizing.
+- **Order Management**: Surgical control over order statuses (Confirm, Ship, Deliver, Cancel).
+- **User Oversight**: Management of user roles and the ability to block/unblock accounts.
+- **Asynchronous Reports**: Daily sales summaries automatically generated and emailed to admins via Celery.
+- **Sharp Design**: A focused "90-degree corner" aesthetic ensuring a premium administrative experience.
+
 ---
-## Getting Started
-### 🐳 Option A: Docker (Recommended)
+
+## ⚙️ Getting Started
+
+### **Way A: Docker Compose (Highly Recommended)**
+Recommended for development and production-like local testing.
+
+1. **Setup Environment**:
+   ```bash
+   cp .env.example .env
+   # Update .env with your preferred credentials
+   ```
+2. **Launch Services**:
+   ```bash
+   docker-compose up --build
+   ```
+3. **Initialize Database**:
+   ```bash
+   docker-compose exec backend python manage.py migrate
+   docker-compose exec backend python manage.py createsuperuser
+   ```
+4. **Access Applications**:
+   - Storefront: `http://localhost:5173`
+   - API Docs: `http://localhost:8000/api/docs/`
+   - Celery Monitoring: `http://localhost:5555`
+
+---
+
+### **Way B: Manual Setup**
+
+#### **1. Backend Setup**
 ```bash
-# 1. Clone the repository
-git clone https://github.com/your-username/sneakin.git
-cd sneakin
-# 2. Copy environment file
-cp .env.example .env
-# Edit .env with your values
-# 3. Start all services
-docker-compose up --build
-# 4. In a new terminal, start the frontend
-cd e-commerce-app
-npm install
-npm run dev
-```
-- **Backend API**: http://localhost:8000
-- **Frontend**: http://localhost:5173
-- **Database**: PostgreSQL on port 5432
-- **Redis**: port 6379
-### 🔧 Option B: Manual Setup
-#### Backend
-```bash
-# 1. Navigate to backend
 cd backend
-# 2. Create and activate virtual environment
 python -m venv venv
-source venv/bin/activate  # macOS/Linux
-# venv\Scripts\activate   # Windows
-# 3. Install dependencies
+source venv/bin/activate
 pip install -r requirements.txt
-# 4. Set up environment
-cp ../.env.example ../.env
-# Edit ../.env with your values
-# 5. Run migrations
+# (Ensure Postgres & Redis are running locally)
 python manage.py migrate
-# 6. Create superuser
-python manage.py createsuperuser
-# 7. Start development server
 python manage.py runserver
 ```
-#### Frontend
+
+#### **2. Frontend Setup**
 ```bash
-# 1. Navigate to frontend
 cd e-commerce-app
-# 2. Install dependencies
 npm install
-# 3. Start JSON server (mock data)
-cd src/data && npx json-server db.json --port 3000 &
-cd ../..
-# 4. Start development server
 npm run dev
 ```
+
 ---
-## Environment Variables
-| Variable | Description | Default |
+
+## 🛡️ Quality Assurance (CI/CD)
+
+We maintain code quality through a dual validation layer:
+
+1. **Local Validation**: Run `bash lint.sh` before pushing. This executes:
+   - **Flake8**: Backend style checks.
+   - **Pytest**: Full backend logic and integration tests.
+   - **Vite Build**: Verifies the frontend compiles correctly.
+2. **Automated Pipeline**: GitHub Actions runs the same suite on every pull request, ensuring the `main` branch is always stable.
+
+---
+
+## 🔗 Internal API Endpoints
+
+| Category | Endpoint | Description |
 |---|---|---|
-| `SECRET_KEY` | Django secret key | — (required) |
-| `DJANGO_SETTINGS_MODULE` | Settings module path | `config.settings.dev` |
-| `DB_NAME` | PostgreSQL database name | `sneakin_db` |
-| `DB_USER` | Database username | `postgres` |
-| `DB_PASSWORD` | Database password | — (required) |
-| `DB_HOST` | Database host | `db` |
-| `DB_PORT` | Database port | `5432` |
-| `ALLOWED_HOSTS` | Comma-separated hosts | `localhost,127.0.0.1` |
-| `CORS_ORIGINS` | Allowed CORS origins | `http://localhost:5173` |
----
-## API Overview
+| **Auth** | `/api/auth/login/` | Secure JWT Authentication |
+| **Catalog** | `/api/products/` | Paginated product listing with filters |
+| **Orders** | `/api/orders/place/` | Customer checkout endpoint |
+| **Admin** | `/api/admin/dashboard/` | Core administrative metrics |
+| **Health** | `/api/health/` | Service status (DB & Redis check) |
 
-### 📖 Interactive API Docs
-- **Swagger UI**: `http://localhost/api/docs/`
-- **Redoc**: `http://localhost/api/docs/redoc/`
-
-### Customer-Facing Endpoints
-| Endpoint | Method | Auth | Description |
-|---|---|---|---|
-| `/api/auth/register/` | POST | None | User registration |
-| `/api/auth/login/` | POST | None | JWT login (returns access + refresh) |
-| `/api/auth/token/refresh/` | POST | None | Refresh access token |
-| `/api/auth/logout/` | POST | JWT | Blacklist refresh token |
-| `/api/auth/profile/` | GET, PUT | JWT | View/update user profile |
-| `/api/products/` | GET | None | List products (paginated) |
-| `/api/products/<id>/` | GET | None | Product details |
-| `/api/cart/` | GET, POST | JWT | View/add to cart |
-| `/api/cart/<id>/` | PATCH, DELETE | JWT | Update/remove cart item |
-| `/api/orders/` | GET | JWT | List user's orders |
-| `/api/orders/place/` | POST | JWT | Place a new order |
-| `/api/orders/<id>/cancel/` | PATCH | JWT | Cancel an order |
-| `/api/wishlist/` | GET, POST | JWT | View/add to wishlist |
-
-### Admin Endpoints (Require `admin` role)
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/admin/dashboard/` | GET | Dashboard stats (users, orders, revenue) |
-| `/api/admin/users/` | GET | List users (paginated, `?search=&role=`) |
-| `/api/admin/users/<id>/` | GET, PATCH, DELETE | User detail / update / deactivate |
-| `/api/admin/users/<id>/block/` | PATCH | Toggle block/unblock user |
-| `/api/admin/products/` | GET, POST | List (paginated) / create products |
-| `/api/admin/products/<id>/` | GET, PATCH, DELETE | Product detail / update / delete |
-| `/api/admin/orders/` | GET | List orders (paginated, `?status=&search=`) |
-| `/api/admin/orders/<id>/` | GET, PATCH | Order detail / status update |
-| `/api/admin/notifications/` | GET | List notifications (`?is_read=&type=`) |
-| `/api/admin/notifications/<id>/read/` | PATCH | Mark notification as read |
-| `/api/admin/notifications/read-all/` | PATCH | Mark all as read |
-| `/api/admin/notifications/unread-count/` | GET | Unread count |
-
-### Infrastructure Endpoints
-| Endpoint | Method | Description |
-|---|---|---|
-| `/api/health/` | GET | Service health check (DB + Redis) |
-| `/api/docs/` | GET | Swagger UI (API documentation) |
-| `/api/docs/redoc/` | GET | Redoc (API documentation) |
 ---
-## Screenshots
-> 📸 *Add screenshots of your application here*
->
-> ```
-> Place screenshots in a /docs/screenshots/ directory and reference them:
-> ![Home Page](docs/screenshots/home.png)
-> ![Admin Dashboard](docs/screenshots/admin-dashboard.png)
-> ```
----
-## License
-This project is licensed under the MIT License — see the [LICENSE](LICENSE) file for details.
----
+
 <div align="center">
-**Built with ❤️ by the SneakIn Team**
+  <p><b>SneakIn</b> — Precision Engineered by the Team</p>
+  <p>Licensed under <b>MIT</b></p>
 </div>

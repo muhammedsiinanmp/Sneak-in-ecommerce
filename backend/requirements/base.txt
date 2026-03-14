@@ -1,0 +1,32 @@
+# ── Core Framework ──
+Django==5.1.6
+djangorestframework==3.16.1
+djangorestframework-simplejwt==5.5.1
+django-cors-headers==4.9.0
+django-filter==25.1
+django-celery-beat==2.7.0
+django-timezone-field==7.2.1
+python-decouple==3.8
+gunicorn==25.1.0
+psycopg2-binary==2.9.11
+
+# ── Celery & Redis ──
+celery==5.5.2
+redis==5.2.1
+flower==2.0.1
+
+# ── API Documentation ──
+drf-spectacular==0.29.0
+
+# ── Monitoring ──
+sentry-sdk==2.54.0
+prometheus-client==0.24.1
+
+# ── Utilities ──
+pillow==12.1.1
+PyJWT==2.11.0
+humanize==4.15.0
+cron-descriptor==2.0.6
+python-crontab==3.3.0
+python-dateutil==2.9.0.post0
+packaging==26.0
