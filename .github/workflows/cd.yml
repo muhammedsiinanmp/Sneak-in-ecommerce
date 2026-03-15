@@ -30,26 +30,24 @@ jobs:
 
       - name: Pre-Deploy Database Backup
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             mkdir -p ~/backups
             docker exec sneak-in-ecommerce-db-1 pg_dump -U postgres sneakin_db \
-              > ~/backups/pre_deploy_$(date +%Y%m%d_%H%M%S).sql 2>/dev/null || true
+              > ~/backups/pre_deploy_\$(date +%Y%m%d_%H%M%S).sql 2>/dev/null || true
             ls -t ~/backups/pre_deploy_*.sql 2>/dev/null | tail -n +8 | xargs rm -f 2>/dev/null || true
-          EOF
+          "
 
       - name: Deploy
         run: |
-          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+          ssh -i ~/.ssh/deploy_key -T ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
             cd ~/Sneak-in-ecommerce
             git pull origin main
             docker compose -f docker-compose.yml -f docker-compose.prod.yml build
             docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              exec -T backend python manage.py migrate --noinput
-            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
-              exec -T backend python manage.py collectstatic --noinput
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py migrate --noinput
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml exec -T backend python manage.py collectstatic --noinput
             docker image prune -f
-          EOF
+          "
 
       - name: Health Check
         run: |
