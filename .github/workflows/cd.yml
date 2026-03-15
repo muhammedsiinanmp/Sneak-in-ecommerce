@@ -1,0 +1,89 @@
+name: SneakIn CD Pipeline
+
+on:
+  push:
+    branches: [main]      # Auto-deploy on push to main
+  workflow_dispatch:       # Manual trigger from GitHub UI
+
+jobs:
+  # ── Step 1: Run CI first ──
+  ci:
+    name: 🔍 Run CI Checks
+    uses: ./.github/workflows/ci.yml
+
+  # ── Step 2: Deploy only if CI passes ──
+  deploy:
+    name: 🚀 Deploy to Production
+    runs-on: ubuntu-latest
+    needs: [ci]
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: 📥 Checkout code
+        uses: actions/checkout@v4
+
+      - name: 🔑 Setup SSH
+        run: |
+          mkdir -p ~/.ssh
+          echo "${{ secrets.EC2_SSH_KEY }}" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          ssh-keyscan -H ${{ secrets.EC2_HOST }} >> ~/.ssh/known_hosts
+
+      - name: 🗄️ Pre-Deploy Database Backup
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            mkdir -p ~/backups
+            # Docker PostgreSQL backup (skip if using RDS — RDS has its own backups)
+            docker exec sneak-in-ecommerce-db-1 pg_dump -U postgres sneakin_db \
+              > ~/backups/pre_deploy_$(date +%Y%m%d_%H%M%S).sql 2>/dev/null || true
+            # Keep only last 7 backups
+            ls -t ~/backups/pre_deploy_*.sql 2>/dev/null | tail -n +8 | xargs rm -f 2>/dev/null || true
+          EOF
+
+      - name: 🚀 Deploy
+        run: |
+          ssh -i ~/.ssh/deploy_key ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} << 'EOF'
+            cd ~/Sneak-in-ecommerce
+
+            # Pull latest code
+            git pull origin main
+
+            # Rebuild and restart
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml build
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+
+            # Run migrations
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              exec -T backend python manage.py migrate --noinput
+
+            # Collect static files
+            docker compose -f docker-compose.yml -f docker-compose.prod.yml \
+              exec -T backend python manage.py collectstatic --noinput
+
+            # Clean up old images
+            docker image prune -f
+          EOF
+
+      - name: ✅ Health Check
+        run: |
+          echo "Waiting 15s for containers to start..."
+          sleep 15
+
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            --max-time 10 https://sneakin.duckdns.org/api/health/)
+
+          if [ "$STATUS" != "200" ]; then
+            echo "❌ Health check FAILED — HTTP $STATUS"
+            echo "Check server logs: ssh ubuntu@${{ secrets.EC2_HOST }} 'dc-prod logs --tail 50 backend'"
+            exit 1
+          fi
+          echo "✅ Health check PASSED — HTTP $STATUS"
+
+      - name: 📢 Deploy Notification
+        if: always()
+        run: |
+          if [ "${{ job.status }}" == "success" ]; then
+            echo "🎉 Deployment successful!"
+          else
+            echo "⚠️ Deployment had issues — check logs above"
+          fi

@@ -5,6 +5,7 @@ on:
     branches: [main, develop]
   pull_request:
     branches: [main]
+  workflow_call:    # Allow CD to call this workflow
 
 jobs:
   backend-test:
