@@ -6,3 +6,4 @@ class CartConfig(AppConfig):
 
     def ready(self):
         import apps.cart.signals
+        
