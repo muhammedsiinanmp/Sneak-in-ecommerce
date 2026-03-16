@@ -22,3 +22,27 @@ a.active hr {
     color: white;
   }
 }
+
+/* Loading Animations */
+@keyframes custom-spin {
+  to { transform: rotate(360deg); }
+}
+.animate-custom-spin {
+  animation: custom-spin 1s linear infinite;
+}
+
+@keyframes custom-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-custom-pulse {
+  animation: custom-pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes custom-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+.animate-custom-bounce {
+  animation: custom-bounce 0.6s infinite;
+}

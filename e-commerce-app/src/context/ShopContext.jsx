@@ -13,6 +13,7 @@ export const ShopProvider = ({ children }) => {
   const { user, getAccessToken } = useContext(AuthContext);
 
   const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [cartItems, setCartItems] = useState([]);
   const [cartTotal, setCartTotal] = useState(0);
   const [cartCount, setCartCount] = useState(0);
@@ -46,6 +47,7 @@ export const ShopProvider = ({ children }) => {
   // =====================================================
   useEffect(() => {
     const loadProducts = async () => {
+      setLoading(true);
       try {
         let allProducts = [];
         let url = `${API}/products/?page_size=100`;
@@ -74,6 +76,8 @@ export const ShopProvider = ({ children }) => {
         setProducts(normalised);
       } catch (err) {
         console.error("Failed to load products:", err);
+      } finally {
+        setLoading(false);
       }
     };
     loadProducts();
@@ -297,6 +301,7 @@ export const ShopProvider = ({ children }) => {
     <ShopContext.Provider
       value={{
         products,
+        loading,
         currency,
         cartItems,
         setCartItems,

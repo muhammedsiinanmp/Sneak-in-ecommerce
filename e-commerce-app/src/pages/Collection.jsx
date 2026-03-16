@@ -2,12 +2,13 @@ import React, { useContext, useEffect, useState } from 'react'
 import { ShopContext } from '../context/ShopContext'
 import Title from '../components/Title'
 import ProductItem from '../components/ProductItem'
+import Loading from '../components/Loading'
 
 const PRODUCTS_PER_PAGE = 12;
 
 const Collection = () => {
 
-  const { products,search,showSearch} = useContext(ShopContext)
+  const { products, search, showSearch, loading } = useContext(ShopContext)
 
   const [showFilter, setShowFilter] = useState(true)
 
@@ -171,13 +172,19 @@ const Collection = () => {
         </p>
 
         {/* Map Products */}
-        <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
-          {
-            paginatedProducts.map((item, index) => (
-              <ProductItem key={index} name={item.name} id={item.id} price={item.price} image={item.image} />
-            ))
-          }
-        </div>
+        {
+          loading ? (
+            <Loading />
+          ) : (
+            <div className='grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4 gap-y-6'>
+              {
+                paginatedProducts.map((item, index) => (
+                  <ProductItem key={index} name={item.name} id={item.id} price={item.price} image={item.image} />
+                ))
+              }
+            </div>
+          )
+        }
 
         {/* Pagination Controls */}
         {totalPages > 1 && (
