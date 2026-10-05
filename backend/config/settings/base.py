@@ -99,7 +99,7 @@ CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_BEAT_SCHEDULE = {
     "daily-sales-report": {
         "task": "apps.orders.tasks.generate_daily_sales_report",
-        "schedule": crontab(hour=0, minute=30),  # 12:30 AM daily
+        "schedule": crontab(hour=0, minute=30),  
     },
 }
 
