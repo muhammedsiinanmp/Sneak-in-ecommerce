@@ -2,13 +2,31 @@
 
 A full-stack sneaker e-commerce platform built with Django REST Framework and React.
 
-**Live:** [sneakin.duckdns.org](https://sneakin.duckdns.org) · [Frontend on Vercel](https://sneak-in-ecommerce.vercel.app)
+[![CI](https://github.com/muhammedsiinanmp/Sneak-in-ecommerce/actions/workflows/ci.yml/badge.svg)](https://github.com/muhammedsiinanmp/Sneak-in-ecommerce/actions/workflows/ci.yml)
+
+**Frontend:** [sneak-in-ecommerce.vercel.app](https://sneak-in-ecommerce.vercel.app)
 
 ---
 
 ## What it is
 
 SneakIn lets customers browse a sneaker catalog, manage a cart and wishlist, place orders, and track order status. Admins get a dashboard to manage inventory, handle orders, and receive automated daily sales reports.
+
+---
+
+## Architecture
+
+```mermaid
+flowchart LR
+    client[React + Vite frontend] --> nginx[Nginx]
+    nginx --> api[Django REST API on Gunicorn]
+    api --> db[(PostgreSQL)]
+    api --> redis[(Redis)]
+    beat[Celery Beat] --> redis
+    redis --> worker[Celery worker]
+    worker --> db
+    flower[Flower] --> redis
+```
 
 ---
 
@@ -50,7 +68,7 @@ SneakIn lets customers browse a sneaker catalog, manage a cart and wishlist, pla
 **Prerequisites:** Docker Desktop, Git, Node.js 20+
 ```bash
 # Clone
-git clone https://github.com/your-username/Sneak-in-ecommerce.git
+git clone https://github.com/muhammedsiinanmp/Sneak-in-ecommerce.git
 cd Sneak-in-ecommerce
 
 # Environment
@@ -104,19 +122,19 @@ Sneak-in-ecommerce/
 
 Full interactive docs at `/api/docs/`. Key endpoints:
 ```
-POST   /api/accounts/register/        Register
-POST   /api/accounts/login/           Login → JWT tokens
-POST   /api/accounts/token/refresh/   Refresh access token
+POST   /api/auth/register/            Register
+POST   /api/auth/login/               Login → JWT tokens
+POST   /api/auth/token/refresh/       Refresh access token
 
 GET    /api/products/                 List products (filterable)
 GET    /api/products/{id}/            Product detail
 
 GET    /api/cart/                     View cart
 POST   /api/cart/add/                 Add item
-DELETE /api/cart/remove/{id}/         Remove item
+DELETE /api/cart/item/{id}/remove/    Remove item
 
-POST   /api/orders/create/            Place order
-GET    /api/orders/history/           Order history
+POST   /api/orders/place/             Place order
+GET    /api/orders/                   Order history
 
 GET    /api/health/                   Service health check
 ```
@@ -135,7 +153,7 @@ docker compose exec backend pytest
 Production runs on AWS EC2 with Docker Compose. Deployment is automated via GitHub Actions — push to `main` and the CD pipeline SSHs into EC2, pulls the latest code, rebuilds containers, runs migrations, and health-checks the API.
 ```bash
 # Manual deploy (if needed)
-ssh -i your-key.pem ubuntu@3.111.19.213
+ssh -i your-key.pem ubuntu@<your-ec2-host>
 cd ~/Sneak-in-ecommerce
 git pull origin main
 docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d --build
@@ -166,4 +184,4 @@ EMAIL_HOST_PASSWORD=
 
 ## License
 
-MIT
+[MIT](License)
