@@ -14,6 +14,16 @@ SneakIn lets customers browse a sneaker catalog, manage a cart and wishlist, pla
 
 ---
 
+## Screenshots
+
+Captured from a local run (Django dev server + Vite) with the product catalog seeded by `seed_products`.
+
+| Home | Collection | Product |
+|------|------------|---------|
+| ![Home page](docs/screenshots/home.jpg) | ![Collection page with filters and pagination](docs/screenshots/collection.jpg) | ![Product detail page with sizes and related products](docs/screenshots/product.jpg) |
+
+---
+
 ## Architecture
 
 ```mermaid
