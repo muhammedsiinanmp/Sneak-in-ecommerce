@@ -51,7 +51,7 @@ flowchart LR
 | Background tasks | Celery + Celery Beat |
 | Auth | JWT via SimpleJWT (token rotation + blacklisting) |
 | Containerization | Docker + Docker Compose |
-| Hosting | AWS EC2 t3.micro + Vercel |
+| Hosting | AWS EC2 + Vercel |
 | CI/CD | GitHub Actions |
 
 ---
@@ -91,10 +91,13 @@ cp docker-compose.override.example.yml docker-compose.override.yml
 # Start everything
 docker compose up --build
 
-# In a new terminal — run migrations and create admin
+# In a new terminal — run migrations, load the bundled catalog, create an admin
 docker compose exec backend python manage.py migrate
+docker compose exec backend python manage.py seed_products   # 20 products from backend/apps/products/fixtures/products.json
 docker compose exec backend python manage.py createsuperuser
 ```
+
+`seed_products` is idempotent (re-running does not duplicate products) and accepts `--file <path>` for a different JSON catalog. As an alternative to `createsuperuser`, `python manage.py seed_admin` creates an admin from `ADMIN_EMAIL`, `ADMIN_NAME` and `ADMIN_PASSWORD` in `.env`.
 
 Docker Compose runs the backend services only. Run the frontend separately (it reads `VITE_API_URL` from `e-commerce-app/.env.development`, which points at `http://localhost:8000/api`):
 ```bash
@@ -106,7 +109,7 @@ npm run dev     # http://localhost:5173
 | Service | URL |
 |---------|-----|
 | Frontend | http://localhost:5173 |
-| API | http://localhost:8000/api/ |
+| API (public product list) | http://localhost:8000/api/products/ |
 | API Docs (Swagger) | http://localhost:8000/api/docs/ |
 | Admin panel | http://localhost:8000/admin/ |
 | Celery monitor | http://localhost:5555 |
@@ -138,7 +141,7 @@ Sneak-in-ecommerce/
 
 ## API reference
 
-Full interactive docs at `/api/docs/`. Key endpoints:
+Full interactive docs at `/api/docs/`. Endpoints require a JWT by default; products, brands, categories, subcategories, register, login/refresh, health and the schema/docs are public. Key endpoints:
 ```
 POST   /api/auth/register/            Register
 POST   /api/auth/login/               Login → JWT tokens
@@ -172,7 +175,7 @@ DB_HOST=localhost python -m pytest
 coverage report --omit='*/migrations/*,*/tests/*,*/tests.py'
 ```
 
-Last measured: **69 tests passing, 88% line coverage** of `backend/apps` (1035 statements, migrations and test files excluded). That was measured with the same `pytest` and `coverage report` commands, with the database settings passed as environment variables, against a local PostgreSQL and with no Redis running.
+Last measured: **71 tests passing, 89% line coverage** of `backend/apps` (migrations and test files excluded). That was measured with the same `pytest` and `coverage report` commands, with the database settings passed as environment variables, against a local PostgreSQL and with no Redis running.
 
 ---
 
