@@ -1,6 +1,6 @@
 import React, { useContext } from 'react'
-import { ShopContext } from '../context/ShopContext'
-import { AuthContext } from '../context/AuthContext'
+import { ShopContext } from '../context/contexts'
+import { AuthContext } from '../context/contexts'
 import { Link } from 'react-router-dom'
 import { toast } from 'react-toastify'
 

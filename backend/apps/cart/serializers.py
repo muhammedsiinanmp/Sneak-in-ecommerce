@@ -10,7 +10,7 @@ class CartItemSerializer(serializers.ModelSerializer):
     class Meta:
         model = CartItem
         fields = ["id", "product", "product_detail", "size", "quantity", "subtotal"]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "product"]
 
     def get_subtotal(self, obj):
         return float(obj.product.price * obj.quantity)
@@ -35,4 +35,4 @@ class CartSerializer(serializers.ModelSerializer):
 class AddToCartSerializer(serializers.Serializer):
     product_id = serializers.IntegerField()
     size = serializers.IntegerField()
-    quantity = serializers.IntegerField(default=1)
+    quantity = serializers.IntegerField(default=1, min_value=1)

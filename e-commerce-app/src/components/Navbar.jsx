@@ -1,7 +1,7 @@
 import React, { useContext, useState } from 'react'
 import { NavLink, Link } from 'react-router-dom'
-import { ShopContext } from '../context/ShopContext'
-import { AuthContext } from '../context/AuthContext'
+import { ShopContext } from '../context/contexts'
+import { AuthContext } from '../context/contexts'
 
 const Navbar = () => {
 

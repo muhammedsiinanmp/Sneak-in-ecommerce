@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
-import { AuthContext } from '../context/AuthContext'
+import { ShopContext } from '../context/contexts'
+import { AuthContext } from '../context/contexts'
 import Title from '../components/Title'
 import { toast } from 'react-toastify'
 

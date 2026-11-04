@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { AuthContext } from '../context/AuthContext';
-import { ShopContext } from '../context/ShopContext';
+import { AuthContext } from '../context/contexts';
+import { ShopContext } from '../context/contexts';
 import {
   LayoutDashboard,
   Package,
