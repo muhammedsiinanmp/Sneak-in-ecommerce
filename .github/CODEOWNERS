@@ -1,0 +1,41 @@
+# CODEOWNERS — named reviewers for the highest-risk paths.
+#
+# Authority: REPOSITORY_ENGINEERING_STANDARD.md §12.4, which requires this file and requires it to
+# cover `services/`, `contracts/`, `infra/`, `deploy/`, `.github/workflows/`, and `docs/adr/`.
+# Location fixed by ADR-0004: `.github/CODEOWNERS`, the location §2.1 and §2.2 already named and
+# the location §12.4 now names. GitHub honours this path; do not add a second copy at the
+# repository root, because a root copy would win silently and this one would be ignored.
+#
+# NO RULES ARE ACTIVE YET.
+#
+# §12.4 closes with: "the roster is a human decision, not a technical one. It is listed in
+# §21." §21.2 Q4 is open, and owner names must not be invented (AGENTS.md §5). Until a roster
+# is supplied, this file records the structure §12.4 requires. Branch protection must not be
+# enabled on the assumption that owners exist — with no rules below, no path has a required
+# reviewer.
+#
+# Coverage §12.4 requires, and what each entry must resolve to:
+#
+#   services/             one owner per service, using the §3.8 vocabulary:
+#                         identity, catalog, commerce, workers, edge
+#   contracts/            the owning service's reviewer. §12.4: a contract is a promise to a
+#                         consumer, so the consumer's owner reviews it too
+#   infra/                the platform owner. §12.4 + I §12.2 make this the highest-risk
+#                         change in the repository
+#   deploy/               the platform owner
+#   .github/workflows/    the platform owner. §12.4 + I §12.2
+#   docs/adr/             the repository owner, since an ADR records a decision for all
+#                         services at once
+#   observability/        the platform owner
+#
+# Once the roster exists, the rules take this shape — one line per path, handles on the right:
+#
+#   services/commerce/         owner of commerce
+#   contracts/events/          owners of commerce, catalog and every listed consumer
+#   infra/                     platform owner
+#   .github/workflows/         platform owner
+#   docs/adr/                  repository owner
+#
+# Branch protection then requires the listed owners for those paths (§12.4 enforcement), and
+# §12.2's ban on self-merging changes to checkout, authentication, schema, migrations or
+# infrastructure becomes enforceable rather than advisory.

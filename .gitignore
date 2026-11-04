@@ -36,11 +36,39 @@ lerna-debug.log*
 .env.prod
 .env.local
 .env
-.coverage
-htmlcov/
-.pytest_cache/
 .env.local
 .env.*.local
+# ─── Test & coverage ───────────────────────────
+.coverage
+.coverage.*
+coverage.xml
+htmlcov/
+.pytest_cache/
+.tox/
+.nox/
+# ─── Go ────────────────────────────────────────
+*.test
+*.out
+coverage.out
+# ─── Terraform ─────────────────────────────────
+# State is never committed. `.terraform.lock.hcl` IS committed on purpose.
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+crash.log
+crash.*.log
+# ─── Secrets ───────────────────────────────────
+*.pem
+*.p12
+*.pfx
+*.key
+service-account*.json
 # ─── OS Files ──────────────────────────────────
 .DS_Store
 Thumbs.db
