@@ -69,6 +69,11 @@ jobs:
           cd backend
           flake8 apps/ --count --show-source --statistics
 
+      - name: 🎨 Check formatting with Black
+        run: |
+          cd backend
+          black --check apps/
+
       - name: 🗄️ Run migrations
         run: |
           cd backend
@@ -98,6 +103,11 @@ jobs:
         run: |
           cd e-commerce-app
           npm ci
+
+      - name: 🔍 Lint frontend
+        run: |
+          cd e-commerce-app
+          npm run lint
 
       - name: 🔨 Build frontend
         run: |
