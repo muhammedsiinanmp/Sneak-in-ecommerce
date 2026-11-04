@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext } from "react";
-import { ShopContext } from "../../context/ShopContext";
+import { ShopContext } from "../../context/contexts";
 import { Link } from "react-router-dom";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";

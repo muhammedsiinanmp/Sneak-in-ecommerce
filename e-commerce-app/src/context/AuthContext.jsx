@@ -1,7 +1,6 @@
-import React, { createContext, useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback } from "react";
+import { AuthContext } from "./contexts";
 import { toast } from "react-toastify";
-
-export const AuthContext = createContext();
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 

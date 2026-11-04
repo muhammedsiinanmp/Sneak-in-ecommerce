@@ -1,10 +1,10 @@
 import React, { useContext } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import { ShopContext } from '../context/contexts'
 import Title from '../components/Title'
 import ProductItem from '../components/ProductItem'
 
 const Wishlist = () => {
-    const { wishlistItems, removeFromWishlist, currency, navigate } = useContext(ShopContext);
+    const { wishlistItems, removeFromWishlist, navigate } = useContext(ShopContext);
 
     return (
         <div className='border-t pt-14'>

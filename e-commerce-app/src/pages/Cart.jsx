@@ -1,11 +1,10 @@
-import React, { useContext, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import React, { useContext } from 'react'
+import { ShopContext } from '../context/contexts'
 import Title from '../components/Title'
 import CartTotal from '../components/CartTotal'
-import { toast } from "react-toastify";
 
 const Cart = () => {
-  const { products, currency, cartItems, updateQuantity, navigate } = useContext(ShopContext)
+  const { currency, cartItems, updateQuantity, navigate } = useContext(ShopContext)
 
   return (
     <div className='border-t pt-14'>
