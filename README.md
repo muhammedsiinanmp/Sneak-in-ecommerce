@@ -4,7 +4,7 @@ A full-stack sneaker e-commerce platform built with Django REST Framework and Re
 
 [![CI](https://github.com/muhammedsiinanmp/Sneak-in-ecommerce/actions/workflows/ci.yml/badge.svg)](https://github.com/muhammedsiinanmp/Sneak-in-ecommerce/actions/workflows/ci.yml)
 
-**Frontend:** [sneak-in-ecommerce.vercel.app](https://sneak-in-ecommerce.vercel.app)
+> **Live demo status:** the hosted backend is currently offline, so the deployed frontend cannot load data. Run the app locally with Docker (see [Running locally](#running-locally)).
 
 ---
 
@@ -36,7 +36,7 @@ flowchart LR
 |-------|-----------|
 | Backend | Django 5.1 + Django REST Framework |
 | Frontend | React 19 + Vite + TailwindCSS |
-| Database | PostgreSQL 16 (AWS RDS in production) |
+| Database | PostgreSQL 16 (Docker container in development and production) |
 | Cache / Queue | Redis 7 |
 | Background tasks | Celery + Celery Beat |
 | Auth | JWT via SimpleJWT (token rotation + blacklisting) |
@@ -52,6 +52,7 @@ flowchart LR
 - Browse products with filtering by brand, category, price
 - Persistent cart and wishlist across sessions
 - Order placement with price snapshot (price locked at purchase time)
+- Payment: cash on delivery only. Stripe and Razorpay appear as `payment_method` choices on the `Order` model and in the checkout UI, but there is no payment-gateway integration: every order is created with status `pending` and no payment is collected
 - Order history and status tracking
 - JWT authentication with silent token refresh
 
@@ -83,6 +84,13 @@ docker compose up --build
 # In a new terminal — run migrations and create admin
 docker compose exec backend python manage.py migrate
 docker compose exec backend python manage.py createsuperuser
+```
+
+Docker Compose runs the backend services only. Run the frontend separately (it reads `VITE_API_URL` from `e-commerce-app/.env.development`, which points at `http://localhost:8000/api`):
+```bash
+cd e-commerce-app
+npm install
+npm run dev     # http://localhost:5173
 ```
 
 | Service | URL |
@@ -142,15 +150,25 @@ GET    /api/health/                   Service health check
 ---
 
 ## Running tests
+
+The backend image installs production dependencies only (`requirements/base.txt`), so run the tests from a virtualenv the way CI does. They need a reachable PostgreSQL. With the dev override, the Compose `db` service is exposed on `localhost:5432`.
 ```bash
-docker compose exec backend pytest
+cd backend
+python -m venv venv && source venv/bin/activate
+pip install -r requirements.txt
+DB_HOST=localhost python -m pytest
+
+# Coverage excluding migrations and test files
+coverage report --omit='*/migrations/*,*/tests/*,*/tests.py'
 ```
+
+Last measured: **69 tests passing, 88% line coverage** of `backend/apps` (1035 statements, migrations and test files excluded). That was measured with the same `pytest` and `coverage report` commands, with the database settings passed as environment variables, against a local PostgreSQL and with no Redis running.
 
 ---
 
 ## Deployment
 
-Production runs on AWS EC2 with Docker Compose. Deployment is automated via GitHub Actions — push to `main` and the CD pipeline SSHs into EC2, pulls the latest code, rebuilds containers, runs migrations, and health-checks the API.
+Production runs on AWS EC2 with Docker Compose, and PostgreSQL runs as a container on the same host (`docker-compose.yml` `db` service; the CD workflow backs it up from the `sneak-in-ecommerce-db-1` container before each deploy). The hosted instance is currently offline. Deployment is automated via GitHub Actions — push to `main` and the CD pipeline SSHs into EC2, pulls the latest code, rebuilds containers, runs migrations, and health-checks the API.
 ```bash
 # Manual deploy (if needed)
 ssh -i your-key.pem ubuntu@<your-ec2-host>
