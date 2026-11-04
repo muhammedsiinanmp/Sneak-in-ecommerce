@@ -55,6 +55,7 @@ REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
         "rest_framework_simplejwt.authentication.JWTAuthentication",
     ),
+    "DEFAULT_PERMISSION_CLASSES": ("rest_framework.permissions.IsAuthenticated",),
     "DEFAULT_PAGINATION_CLASS": "rest_framework.pagination.PageNumberPagination",
     "PAGE_SIZE": 12,
     "DEFAULT_FILTER_BACKENDS": [
@@ -79,6 +80,7 @@ SPECTACULAR_SETTINGS = {
     "DESCRIPTION": "API documentation for the SneakIn E-Commerce Platform",
     "VERSION": "1.0.0",
     "SERVE_INCLUDE_SCHEMA": False,
+    "SERVE_PERMISSIONS": ["rest_framework.permissions.AllowAny"],
 }
 
 SIMPLE_JWT = {
@@ -99,7 +101,7 @@ CELERY_TIMEZONE = "Asia/Kolkata"
 CELERY_BEAT_SCHEDULE = {
     "daily-sales-report": {
         "task": "apps.orders.tasks.generate_daily_sales_report",
-        "schedule": crontab(hour=0, minute=30),  
+        "schedule": crontab(hour=0, minute=30),  # 12:30 AM daily
     },
 }
 

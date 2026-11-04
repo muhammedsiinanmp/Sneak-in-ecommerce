@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useContext, useCallback } from "react";
-import { ShopContext } from "../../context/ShopContext";
+import { ShopContext } from "../../context/contexts";
 import { toast } from "react-toastify";
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";

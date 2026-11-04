@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from django.core.management.base import BaseCommand
 from apps.products.models import (
     Brand,
@@ -10,11 +11,14 @@ from apps.products.models import (
 )
 
 
+DEFAULT_FIXTURE = Path(__file__).resolve().parents[2] / "fixtures" / "products.json"
+
+
 class Command(BaseCommand):
-    help = "Seed products from db.json"
+    help = "Seed products from a JSON file (defaults to the bundled catalog)"
 
     def add_arguments(self, parser):
-        parser.add_argument("--file", type=str, default="db.json")
+        parser.add_argument("--file", type=str, default=str(DEFAULT_FIXTURE))
 
     def handle(self, *args, **options):
         with open(options["file"], "r") as f:

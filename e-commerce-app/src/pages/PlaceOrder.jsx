@@ -1,8 +1,8 @@
 import React, { useContext, useState } from 'react'
 import Title from '../components/Title'
 import CartTotal from '../components/CartTotal'
-import { ShopContext } from '../context/ShopContext'
-import { AuthContext } from "../context/AuthContext"
+import { ShopContext } from '../context/contexts'
+import { AuthContext } from "../context/contexts"
 import { toast } from "react-toastify"
 
 const PlaceOrder = () => {
