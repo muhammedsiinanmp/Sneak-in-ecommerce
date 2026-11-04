@@ -1,3 +1,5 @@
+import logging
+
 import redis
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -5,6 +7,8 @@ from rest_framework import status
 from rest_framework.permissions import AllowAny
 from django.db import connection
 from django.conf import settings
+
+logger = logging.getLogger(__name__)
 
 
 class HealthCheckAPIView(APIView):
@@ -22,8 +26,9 @@ class HealthCheckAPIView(APIView):
         try:
             connection.ensure_connection()
             health["services"]["database"] = "up"
-        except Exception as e:
-            health["services"]["database"] = f"down: {str(e)}"
+        except Exception:
+            logger.exception("Health check: database is down")
+            health["services"]["database"] = "down"
             health["status"] = "unhealthy"
 
         # Check Redis
@@ -33,8 +38,9 @@ class HealthCheckAPIView(APIView):
             )
             r.ping()
             health["services"]["redis"] = "up"
-        except Exception as e:
-            health["services"]["redis"] = f"down: {str(e)}"
+        except Exception:
+            logger.exception("Health check: redis is down")
+            health["services"]["redis"] = "down"
             health["status"] = "unhealthy"
 
         status_code = (
