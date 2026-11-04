@@ -99,3 +99,37 @@ class CartAPITest(APITestCase):
         )
 
         self.assertEqual(response.status_code, 400)
+
+    def test_cannot_add_zero_or_negative_quantity(self):
+        for quantity in (0, -3):
+            response = self.client.post(
+                "/api/cart/add/",
+                {"product_id": self.product.id, "size": 42, "quantity": quantity},
+            )
+
+            self.assertEqual(response.status_code, 400)
+        self.assertFalse(Cart.objects.get(user=self.user).items.exists())
+
+    def test_update_cannot_change_cart_item_product(self):
+        other = Product.objects.create(
+            name="Other Shoe",
+            brand=self.product.brand,
+            category=self.product.category,
+            subcategory=self.product.subcategory,
+            price=1,
+            stock=10,
+            in_stock=True,
+        )
+        self.client.post(
+            "/api/cart/add/", {"product_id": self.product.id, "size": 42, "quantity": 1}
+        )
+        item = Cart.objects.get(user=self.user).items.first()
+
+        response = self.client.patch(
+            f"/api/cart/item/{item.id}/", {"quantity": 2, "product": other.id}
+        )
+
+        self.assertEqual(response.status_code, 200)
+        item.refresh_from_db()
+        self.assertEqual(item.product, self.product)
+        self.assertEqual(item.quantity, 2)
