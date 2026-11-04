@@ -21,9 +21,7 @@ class TestDefaultPermission:
 
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
-    def test_view_without_permission_classes_allows_authenticated(
-        self, regular_user
-    ):
+    def test_view_without_permission_classes_allows_authenticated(self, regular_user):
         request = APIRequestFactory().get("/")
         force_authenticate(request, user=regular_user)
 
