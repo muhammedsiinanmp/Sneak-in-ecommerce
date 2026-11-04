@@ -1,5 +1,5 @@
-import React, { useContext, useEffect, useState } from 'react'
-import { ShopContext } from '../context/ShopContext'
+import React, { useContext, useMemo } from 'react'
+import { ShopContext } from '../context/contexts'
 import Title from './Title'
 import ProductItem from './ProductItem'
 import Loading from './Loading'
@@ -7,12 +7,10 @@ import Loading from './Loading'
 const BestSeller = () => {
 
     const { products, loading } = useContext(ShopContext)
-    const [bestSeller, setBestSeller] = useState([])
-
-    useEffect(() => {
-        const bestProduct = products.filter((item) => (item.bestseller));
-        setBestSeller(bestProduct.slice(0, 10))
-    }, [products])
+    const bestSeller = useMemo(
+        () => products.filter((item) => (item.bestseller)).slice(0, 10),
+        [products]
+    )
 
     return (
         <div className='my-10'>
@@ -29,7 +27,7 @@ const BestSeller = () => {
                 ) : (
                     <div className='grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 gap-y-6'>
                         {
-                            bestSeller.map((item, index) => (
+                            bestSeller.map((item) => (
                                 <ProductItem
                                     key={item.id}
                                     id={item.id}

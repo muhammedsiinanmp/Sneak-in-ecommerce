@@ -1,10 +1,8 @@
 // src/context/ShopContext.jsx
-import React, { createContext, useEffect, useState, useContext, useCallback } from "react";
-import { AuthContext } from "./AuthContext";
+import React, { useEffect, useState, useContext, useCallback } from "react";
+import { AuthContext, ShopContext } from "./contexts";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
-
-export const ShopContext = createContext();
 
 const API = import.meta.env.VITE_API_URL || "http://localhost:8000/api";
 
